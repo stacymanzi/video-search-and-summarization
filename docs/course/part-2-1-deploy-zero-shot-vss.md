@@ -54,7 +54,7 @@ Now set the environment for the deployment. This step needs the **NGC Personal A
 
 ```bash
 export AICITY_PUBLIC_URL="http://<your-lab-host>"
-export AICITY_MEDIA_DIR=/dli/task/data
+export AICITY_MEDIA_DIR=$LAB_DATA_DIR
 export AICITY_DATA_DIR=/opt/aicity-runtime/aicity-vss-data
 export AICITY_BUILD_DIR=/opt/vss/_builds/aicity-track4-alert-verification-dli-cvfix4
 export NGC_CLI_ORG=nvidia
@@ -130,7 +130,7 @@ Expected, in order:
 
 1. `install.sh` verifies every file of the package against its checksums and pins `/opt/vss` to the experiment commit `6b27160a`.
 2. The unit suite passes and structural validation resolves exactly 19 services.
-3. `build.py` prints `Cache seed: /dli/task/data/vss-caches`, then `RT-CV models/engines: extracted into VSS_DATA_DIR`, then the two RT-VLM volumes the state initializer will fill. The course stages these caches, so nothing is downloaded from NGC and no TensorRT engine is compiled.
+3. `build.py` prints `Cache seed: $LAB_DATA_DIR/vss-caches`, then `RT-CV models/engines: extracted into VSS_DATA_DIR`, then the two RT-VLM volumes the state initializer will fill. The course stages these caches, so nothing is downloaded from NGC and no TensorRT engine is compiled.
 4. `preflight` passes. The sysctl warning is expected.
 5. `up` ends with `All AI City VSS services, UI, and ingress capability probes are ready.` About 4 minutes. In the second terminal the state initializer appears first and exits; then Elasticsearch, Kafka, Redis, Postgres and RT-VLM start together, with RT-VLM showing `starting` the longest while it loads the checkpoint; then the three VIOS services; then RT-CV, Behavior Analytics and Alert Bridge.
 
@@ -149,7 +149,7 @@ The Alerts tab loads and is empty. That is correct: the rules exist, but no vide
 Paste into Codex:
 
 ```
-Run README section 8 with /dli/task/data/traffic_anomaly_dataset/eval_videos/eval_video_01.mp4, run id stock-eval-01 under /opt/aicity-runtime/aicity-eval, --vlm-model nim_nvidia_cosmos3-nano-reasoner_bf16-final, keeping --retain-vios-storage. Show me the run manifest counts and every verdict with its reasoning field.
+Run README section 8 with $LAB_DATA_DIR/traffic_anomaly_dataset/eval_videos/eval_video_01.mp4, run id stock-eval-01 under /opt/aicity-runtime/aicity-eval, --vlm-model nim_nvidia_cosmos3-nano-reasoner_bf16-final, keeping --retain-vios-storage. Show me the run manifest counts and every verdict with its reasoning field.
 ```
 
 Expected in about 6 minutes: the script uploads the 3-minute clip to VIOS, registers a stream, waits until RT-CV has reached the end of the clip and the candidate and verdict counts have been stable for 30 seconds, at least 130 seconds after the end of the video, then writes the manifest. The manifest ends in `state: complete_not_scored` with no `failure` entry (the README's `jq` projection prints that as `failure: null`), several thousand `rt_cv_detection_frames`, and candidates for the two collisions and the two stalled vehicles in the clip. Behavior Analytics usually raises more than one stop candidate per stalled vehicle. The manifest is a snapshot: if a candidate is still missing its verdict, wait a minute and refresh the Alerts tab.
@@ -189,7 +189,7 @@ Expected: `docker ps` lists nothing and `nvidia-smi` shows both GPUs nearly empt
 |---|---|
 | Codex asks you for the NGC key, or stalls on the credential probe | The key was not exported before Codex started. Type `/exit`, run the Step 1 export block, start Codex again and paste the context block again. Never paste the key into the chat. |
 | `build.py: ... is listed in SHA256SUMS but not staged; the course loader may still be copying` | The 16 GB cache archive has not finished landing on this instance. Wait a few minutes and ask Codex to rerun the build. |
-| `Cache seed: none staged` | The course loader has not landed `/dli/task/data/vss-caches` yet. Do not proceed. Wait until `ls /dli/task/data/vss-caches` shows `SHA256SUMS` and the three `.tar` archives, have Codex move the build directory aside, and rerun the build. If the files never appear, call a TA. |
+| `Cache seed: none staged` | The course loader has not landed `$LAB_DATA_DIR/vss-caches` yet. Do not proceed. Wait until `ls $LAB_DATA_DIR/vss-caches` shows `SHA256SUMS` and the three `.tar` archives, have Codex move the build directory aside, and rerun the build. If the files never appear, call a TA. |
 | Codex wants to add `--external-ip` to `build.py`, or says the hostname is missing | There is no such flag. The hostname is in `AICITY_PUBLIC_URL` and travels in `--public-url`. |
 | Codex asks for an external IP or a host address | Give it the hostname from your browser's address bar, the same value as in `AICITY_PUBLIC_URL`. Never a public IP fetched with curl; VSS needs the name the browser uses. |
 | Codex tries to set `net.core.rmem_max` / `wmem_max`, or asks for sudo | Expected warning, cannot be changed from a container, safe to overrule. Point it at rule 4 of the context block. |

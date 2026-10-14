@@ -7,18 +7,17 @@ vehicle, pedestrians in the roadway); no enforcement or identification framing.
 ## Qwen edit instructions (`edit_examples.json`)
 
 Example instructions for the seed image, listed by the 1.2 cell for inspiration. The notebook takes a free-text
-`EDIT_PROMPT`; these are not a menu. The notebook's default instruction is `snowy_morning` (seed 42, Stacy's choice,
-not yet generated on the devbox). `rainy_morning` (seed 42) is validated on the devbox; the others have not been generated there yet.
+`EDIT_PROMPT`; these are not a menu. The notebook's default instruction is `snowy_morning`.
 
 ## I2V scenario presets (`I2V_PROMPT_FILES` in the notebook)
 
-| File | Preset | Status |
-|---|---|---|
-| `i2v_normal_traffic.json` | `normal_traffic` | validated on the devbox (Sep 3, seed 0) - the default |
-| `i2v_red_light_running.json` | `red_light_running` | not yet generated on the devbox |
-| `i2v_wrong_way_driving.json` | `wrong_way_driving` | not yet generated on the devbox |
-| `i2v_stalled_vehicle.json` | `stalled_vehicle` | new prompt following `i2v_prompt_schema.json`; not yet generated on the devbox |
-| `i2v_collision.json` | `collision` | new prompt following `i2v_prompt_schema.json`; not yet generated on the devbox |
+| File | Preset |
+|---|---|
+| `i2v_normal_traffic.json` | `normal_traffic` (default) |
+| `i2v_red_light_running.json` | `red_light_running` |
+| `i2v_wrong_way_driving.json` | `wrong_way_driving` |
+| `i2v_stalled_vehicle.json` | `stalled_vehicle` |
+| `i2v_collision.json` | `collision` |
 
 `i2v_prompt_schema.json` documents the schema; `llm_generated_prompt.json` is the example output of the
 optional 2.2.1 step (shown for reference when the step is skipped). The notebook never writes into this
@@ -26,10 +25,10 @@ directory: generated prompts go to `assets/outputs/prompts/`.
 
 ## Transfer presets (`TRANSFER_PROMPT_FILES`)
 
-| File | Preset | Status |
-|---|---|---|
-| `transfer_nighttime_snowy.json` | `nighttime_snowy` | validated on the devbox (Sep 3, seed 2026, 193 frames / 45 steps, guidance 3, control_guidance 2, shift 5) - the default |
-| `transfer_nighttime_wet.json` | `nighttime_wet` | ran on the devbox (Sep 3) with earlier settings; not yet re-run with the final ones |
+| File | Preset |
+|---|---|
+| `transfer_nighttime_snowy.json` | `nighttime_snowy` (default) |
+| `transfer_nighttime_wet.json` | `nighttime_wet` |
 
 `transfer_prompt_schema.json` documents the schema; `llm_generated_transfer_prompt.json` is the example
 output of the optional 3.1.1 step.

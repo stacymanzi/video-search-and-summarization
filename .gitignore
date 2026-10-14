@@ -1,13 +1,18 @@
-# Python-generated files
+.env
+docs/_build/
 __pycache__/
-*.py[oc]
-_build/
-dist/
-wheels/
-*.egg-info
+*.pyc
+.ipynb_checkpoints/
 
-# Added
-.venv/
+# Executed notebooks with outputs (large, not for review)
+*_executed.ipynb
 
-# Working material that must not ship with the docs
-docs/course/assets/*.pdf
+# Downloaded model/media caches (populated by setup scripts)
+data/lab2-hf-cache/
+data/hf_home/
+data/nemotron-nim-cache/
+data/cosmos3-reasoner-cache/
+
+# Cloned framework venv (rebuilt by setup scripts)
+cosmos-framework/
+cosmos3-framework/

@@ -10,7 +10,7 @@ This walkthrough does one of each.
 - **Level:** All levels — no prior VLM or Cosmos experience needed
 - **Tracks:** Two independent tracks, completable in either order
 - **Generation time:** About 4 minutes per EVG clip; about 18–20 minutes for the 7-second VDA augmentation plus auto-labeling, once endpoints are ready
-- **Working directory:** `/dli/task/Part-2/`
+- **Working directory:** `$LAB_DATA_DIR/Part-2/`
 ```
 ## Learning Objectives
 ```{nvlearning-objectives}
@@ -34,7 +34,7 @@ Do them in either order. Each track follows the same shape:
 ---
 ## Load the Skills
 
-Open the Part-2 Directory `cd /dli/task/Part-2/` as its working directory. Its
+Open the Part-2 Directory `cd $LAB_DATA_DIR/Part-2/` as its working directory. Its
 `skills/` subdirectory already contains both skills this lab uses. 
 
 ```
@@ -67,7 +67,7 @@ can set up the workflow with hosted endpoints if needed.
 ### Generate a Traffic-Anomaly Video
 ```
 Generate one clip of a vehicle stalling in the middle of a busy intersection
-using `/dli/task/Part-2/traffic_cam.png` as the seed image, seed 43
+using `$LAB_DATA_DIR/Part-2/traffic_cam.png` as the seed image, seed 43
 ```
 
 The skill maps the requested seed image, incident type, environment, and seed
@@ -99,7 +99,7 @@ them as successful generations. You can inspect any available video, unchanged
 metadata, and `failure_summary.json` under:
 
 ```
-/dli/task/Part-2/paidf_rejects/evg/<run>/<name>/<attempt>/
+$LAB_DATA_DIR/Part-2/paidf_rejects/evg/<run>/<name>/<attempt>/
 ```
 
 The single-video flow may use its one configured retry after a failed attempt;
@@ -184,7 +184,7 @@ inside the augmentation container when you submit the generation request.
 ### Augment the Clip With Different Conditions
 
 ```
-Run only the augmentation stage on `/dli/task/Part-2/input.mp4` using the
+Run only the augmentation stage on `$LAB_DATA_DIR/Part-2/input.mp4` using the
 `city_traffic` generation config, transforming it into a clear nighttime scene.
 ```
 
@@ -202,7 +202,7 @@ total.
 ### View the Result
 
 Successful runs are published under
-`/dli/task/Part-2/paidf_outputs/vda/<run-name>/<video-name>_aug0/`. View the
+`$LAB_DATA_DIR/Part-2/paidf_outputs/vda/<run-name>/<video-name>_aug0/`. View the
 generated clip in `augmented/augmented_video.mp4` and the labeled tracking
 overlay in `labeled/sidecars/augmented_video_tracking_red_id.mp4`.
 
@@ -219,7 +219,7 @@ output directory while preserving it for inspection. Any available generated
 video, unchanged metadata, and `failure_summary.json` are stored under:
 
 ```
-/dli/task/Part-2/paidf_rejects/vda/<run>/<video>_aug<index>/<attempt>/
+$LAB_DATA_DIR/Part-2/paidf_rejects/vda/<run>/<video>_aug<index>/<attempt>/
 ```
 
 This lets you see what the pipeline caught and which attribute or structure

@@ -8,7 +8,7 @@ Holding everything else constant is the whole point. The CV stages are untouched
 - **Level:** All levels — no prior VLM or Cosmos experience needed
 - **Duration:** About 25 minutes. About 10 minutes to rebuild and load the checkpoint, about 6 minutes for the evaluation video.
 - **Agent:** Codex, continuing from the Part 2.1 terminal
-- **Checkpoint:** `/dli/task/data/models/Cosmos3-Nano-VLM-lora`
+- **Checkpoint:** `$LAB_DATA_DIR/models/Cosmos3-Nano-VLM-lora`
 ```
 
 ## Learning Objectives
@@ -31,13 +31,13 @@ nvidia-smi --query-gpu=index,memory.used,memory.total --format=csv
 
 Expected: no containers, both GPUs under 1 GB used.
 
-The fine-tuned checkpoint is a merged LoRA (r=16, alpha=32 on q_proj and v_proj) of Cosmos Reason 3 Nano. RT-VLM serves it read-only from the course data directory and advertises the directory basename, `Cosmos3-Nano-VLM-lora`, as the model id. This walkthrough deploys the course-provided copy at `/dli/task/data/models/Cosmos3-Nano-VLM-lora`, staged by the course loader. The checkpoint you merged in Part 2.3 lives at `/dli/task/data/lab3/part2/merged/Cosmos3-Nano-VLM-lora`; it is the same recipe with the same basename, so you may pass that path to `--vlm-model-dir` instead and everything below works unchanged.
+The fine-tuned checkpoint is a merged LoRA (r=16, alpha=32 on q_proj and v_proj) of Cosmos Reason 3 Nano. RT-VLM serves it read-only from the course data directory and advertises the directory basename, `Cosmos3-Nano-VLM-lora`, as the model id. This walkthrough deploys the course-provided copy at `$LAB_DATA_DIR/models/Cosmos3-Nano-VLM-lora`, staged by the course loader. The checkpoint you merged in Part 2.3 lives at `$DLI_BASE/part2/merged/Cosmos3-Nano-VLM-lora`; it is the same recipe with the same basename, so you may pass that path to `--vlm-model-dir` instead and everything below works unchanged.
 
 If the Part 2.1 terminal is still open with Codex in it, skip to Step 1. If it is gone, open a new terminal, re-create the environment and start a new Codex session. Part 2.3 installed a TAO agent identity at `~/.codex/AGENTS.md` that Codex loads into every new session; remove it so this session behaves as the VSS agent.
 
 ```bash
 export AICITY_PUBLIC_URL="http://<your-lab-host>"
-export AICITY_MEDIA_DIR=/dli/task/data
+export AICITY_MEDIA_DIR=$LAB_DATA_DIR
 export AICITY_DATA_DIR=/opt/aicity-runtime/aicity-vss-data
 export AICITY_BUILD_DIR=/opt/vss/_builds/aicity-track4-alert-verification-dli-cvfix4
 export NGC_CLI_ORG=nvidia
@@ -78,7 +78,7 @@ When something looks wrong here, ask two questions before changing any setting: 
 Paste into Codex:
 
 ```
-Check docker ps. If anything from the AI City project is still running, stop it first with deploy.py --build-dir $AICITY_BUILD_DIR down, without -v. Then move the existing $AICITY_BUILD_DIR aside and rebuild from /dli/task/aicity_cvfix4/README.md: run the section 5 build.py command exactly as written there (H100, --host-ip $HOST_IP, --public-url $AICITY_PUBLIC_URL, 800 by 410, the AICITY_* directories) plus --vlm-model-dir /dli/task/data/models/Cosmos3-Nano-VLM-lora from the optional fine-tuned section. Run preflight, then up, and wait for ready. RT-VLM must advertise Cosmos3-Nano-VLM-lora. If anything fails, stop and show me the error instead of working around it. Report the exact commands you ran at the end.
+Check docker ps. If anything from the AI City project is still running, stop it first with deploy.py --build-dir $AICITY_BUILD_DIR down, without -v. Then move the existing $AICITY_BUILD_DIR aside and rebuild from /dli/task/aicity_cvfix4/README.md: run the section 5 build.py command exactly as written there (H100, --host-ip $HOST_IP, --public-url $AICITY_PUBLIC_URL, 800 by 410, the AICITY_* directories) plus --vlm-model-dir $LAB_DATA_DIR/models/Cosmos3-Nano-VLM-lora from the optional fine-tuned section. Run preflight, then up, and wait for ready. RT-VLM must advertise Cosmos3-Nano-VLM-lora. If anything fails, stop and show me the error instead of working around it. Report the exact commands you ran at the end.
 ```
 
 Expected: `build.py` checks that the checkpoint is a complete merged export and readable by RT-VLM, prints `RT-VLM serves fine-tuned checkpoint ... VLM_NAME=Cosmos3-Nano-VLM-lora`, and prints the same `Cache seed` lines as in Part 2.1 with `RT-CV models/engines: already complete in VSS_DATA_DIR`. In the state initializer log the two RT-VLM volumes report `already seeded`. `up` ends with the ready message and readiness confirms the advertised model. About 10 minutes: a few minutes to rebuild, preflight and start the services, then about 5 minutes for RT-VLM to read the 17 GB checkpoint from the data volume.
@@ -94,7 +94,7 @@ Rows from Part 2.1 remain under `stock-eval-01`: the state volumes survived the 
 Paste into Codex:
 
 ```
-Run README section 8 with /dli/task/data/traffic_anomaly_dataset/eval_videos/eval_video_01.mp4, run id ft-eval-01 under /opt/aicity-runtime/aicity-eval, --vlm-model Cosmos3-Nano-VLM-lora, keeping --retain-vios-storage. Show me the run manifest counts and every verdict with its reasoning field, and compare them with the stock-eval-01 run.
+Run README section 8 with $LAB_DATA_DIR/traffic_anomaly_dataset/eval_videos/eval_video_01.mp4, run id ft-eval-01 under /opt/aicity-runtime/aicity-eval, --vlm-model Cosmos3-Nano-VLM-lora, keeping --retain-vios-storage. Show me the run manifest counts and every verdict with its reasoning field, and compare them with the stock-eval-01 run.
 ```
 
 Expected in about 6 minutes: the same four events covered, with detection-frame and candidate counts matching `stock-eval-01` or within a candidate or two of it, a Cosmos verdict per candidate, and the agent listing every verdict that changed. The collisions stay confirmed with `LABEL=collision`. The stalled vehicles, rejected with `LABEL=none` in Part 2.1, are now confirmed with `LABEL=stalled`.
@@ -123,7 +123,7 @@ The scoring command that produced the table, for reference. It needs the run dir
 
 ```bash
 cd /opt/vss && python3 experiments/aicity_track4_alert_verification/scripts/score_cosmos_super_eval.py \
-  --timelines /dli/task/data/traffic_anomaly_dataset/eval_videos/timelines.json \
+  --timelines $LAB_DATA_DIR/traffic_anomaly_dataset/eval_videos/timelines.json \
   --run-dir /opt/aicity-runtime/aicity-eval/ft-eval-01 \
   --run-dir /opt/aicity-runtime/aicity-eval/ft-eval-02 \
   --run-dir /opt/aicity-runtime/aicity-eval/ft-eval-03 \

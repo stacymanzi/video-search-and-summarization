@@ -29,7 +29,7 @@ deploys.
 - **Duration:** About 30 minutes, dominated by one training wait
 - **Video tutorial:** <https://youtu.be/9AQkVbx3fKA>
 - **Agent:** Codex with the TAO Skill Bank
-- **Working directory:** `/dli/task/data/lab3/part2`
+- **Working directory:** `$DLI_BASE/part2`
 ```
 
 ## Learning Objectives
@@ -54,9 +54,9 @@ difference is time.
 | Asset | Where |
 |---|---|
 | TAO Cosmos-RL container | `nvcr.io/nvidia/tao/tao-toolkit:7.2.0-cosmos-rl`, present in the Docker daemon |
-| Base checkpoint | `/dli/task/data/lab3/models/Cosmos3-Nano-VLM/` (17 GB) |
-| Dataset | `/dli/task/data/lab3/dataset/` — `train/` 92 clips, `val/` 128 clips, `dataset_info.json` |
-| Course-provided fine-tuned checkpoint | `/dli/task/data/models/Cosmos3-Nano-VLM-lora/` — the fallback Part 2.4 deploys if you skip this walkthrough |
+| Base checkpoint | `$DLI_BASE/models/Cosmos3-Nano-VLM/` (17 GB) |
+| Dataset | `$DLI_BASE/dataset/` — `train/` 92 clips, `val/` 128 clips, `dataset_info.json` |
+| Course-provided fine-tuned checkpoint | `$LAB_DATA_DIR/models/Cosmos3-Nano-VLM-lora/` — the fallback Part 2.4 deploys if you skip this walkthrough |
 
 The base checkpoint is Cosmos Reason 3 Nano already converted to Qwen3-VL
 safetensors, so no conversion runs here. When that converted checkpoint is not
@@ -64,7 +64,7 @@ present, the agent downloads the omni-modal `nvidia/Cosmos3-Nano` from Hugging
 Face and converts it to Qwen3-VL safetensors itself before training; the skill
 owns that step.
 
-Everything under `/dli/task/data` is visible at the same path from your terminal
+Everything under `$LAB_DATA_DIR` is visible at the same path from your terminal
 and from the Docker daemon (which runs in a separate `dind` container, reached
 through `DOCKER_HOST`). That is the only tree the daemon can bind-mount, which is
 why the workspace lives there: anything written elsewhere is invisible to the
@@ -179,7 +179,7 @@ A new Codex session in a new directory. The Part 2.1 session lives in
 `/opt/vss` with the VSS skills; this one gets its own workspace.
 
 ```bash
-mkdir -p /dli/task/data/lab3/part2 && cd /dli/task/data/lab3/part2
+mkdir -p $DLI_BASE/part2 && cd $DLI_BASE/part2
 codex
 ```
 
@@ -192,8 +192,8 @@ Paste into Codex:
 
 ```text
 Using the TAO skills, evaluate the base Cosmos 3 Nano checkpoint at
-/dli/task/data/lab3/models/Cosmos3-Nano-VLM on the validation split in
-/dli/task/data/lab3/dataset/val, writing everything under the current directory.
+$DLI_BASE/models/Cosmos3-Nano-VLM on the validation split in
+$DLI_BASE/dataset/val, writing everything under the current directory.
 
 Use these verified settings and do not probe for them:
 - image: nvcr.io/nvidia/tao/tao-toolkit:7.2.0-cosmos-rl (already present, never pull)
@@ -202,7 +202,7 @@ Use these verified settings and do not probe for them:
 - env: TAO_API_JOB_ID=<job name>, TAO_API_RESULTS_DIR=/results, HF_HUB_OFFLINE=1
 - mounts: checkpoint at /ptm (read-only), val split at /val (read-only), results directory at /results
 - command: cosmos-rl-evaluate --config /results/config.toml
-- spec: start from /dli/task/lab-3-vlm-pt/configs/eval_config.toml and set only
+- spec: start from /workspace/lab-3-vlm-pt/configs/eval_config.toml and set only
   model.model_name=/ptm, model.base_model_path=/ptm, model.enable_lora=false,
   dataset.annotation_path=/val/annotations_augmented.json,
   dataset.system_prompt from dataset_info.json, num_gpus=2
@@ -263,11 +263,11 @@ at the `docker run` approval — and that pause is where you read the plan.
 
 ```text
 Fine-tune the same checkpoint with LoRA on the training split in
-/dli/task/data/lab3/dataset/train (annotations_augmented.json), validating on
+$DLI_BASE/dataset/train (annotations_augmented.json), validating on
 the val split, on both GPUs, with outputs under the current directory.
 
 Settings, all verified for this environment:
-- spec: start from /dli/task/lab-3-vlm-pt/configs/train_config.toml
+- spec: start from /workspace/lab-3-vlm-pt/configs/train_config.toml
 - LoRA rank 16, alpha 32, on q_proj and v_proj
 - 3 epochs; train_batch_per_replica 4 with mini_batch 1; learning rate 1e-4
 - nframes 8; model_max_length 40960; dp_shard_size 2
@@ -377,13 +377,13 @@ separate adapter, and the Cosmos 3 Reasoner NIM has the same requirement.
 Merging the adapter into the base weights is therefore the standard final step
 of a Cosmos fine-tuning run.
 
-Part 2.4 deploys whatever is at `/dli/task/data/models/Cosmos3-Nano-VLM-lora`.
+Part 2.4 deploys whatever is at `$LAB_DATA_DIR/models/Cosmos3-Nano-VLM-lora`.
 
 Paste into Codex:
 
 ```text
 Merge the best adapter into the base weights and write the merged checkpoint to
-/dli/task/data/models/Cosmos3-Nano-VLM-lora. If a checkpoint already exists there,
+$LAB_DATA_DIR/models/Cosmos3-Nano-VLM-lora. If a checkpoint already exists there,
 leave it in place and skip the merge.
 
 Evaluate the checkpoint at that path on the same clips, mounted at /ptm with

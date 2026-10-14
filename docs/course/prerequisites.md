@@ -16,7 +16,7 @@ you the walkthrough.
 ```{nvlearning-objectives}
 - **Create** an NVIDIA NGC account and generate a Personal API Key scoped to the NGC Catalog.
 - **Store** that key safely, and recognise where the course asks for it.
-- **Activate** your ChatGPT Pro plan and sign in to the Codex CLI with a device code.
+- **Set up** a command-line coding agent (Codex, Claude Code, OpenClaw, or similar) with an active account.
 ```
 
 ## Create an NGC Personal API Key
@@ -96,31 +96,25 @@ credential, the answer is that the key is already set. Do not commit a key to
 version control.
 :::
 
-## Set Up the Codex Coding Agent
+## Set Up a Coding Agent
 
-Every walkthrough in Part 2 is driven by **Codex**, OpenAI's command-line coding
-agent. You sign in with your own ChatGPT account, so both the plan and the login
-need to be sorted before the course.
+Every walkthrough in Part 2 is driven by a **command-line coding agent**. The
+walkthroughs are written for **Codex** (OpenAI), but you can use any agent you
+prefer — Claude Code, OpenClaw, Codex, or others. The agent skills and prompts
+work the same way regardless of which you choose.
 
-### Activate Your One-Month Free Pro Plan
+### Get an Account for Your Agent
 
-1. Visit `www.chatgpt.com/p/[PROMOCODE]`, replacing `[PROMOCODE]` with the code
-   printed on your card. Log in if prompted.
+Make sure you have a working account and subscription for whichever agent you
+plan to use:
 
-   ![The ChatGPT Pro offer card: $100 struck through and reduced to $0 for the first month, with an Upgrade to Pro button](assets/codex-promo-upgrade.png)
+- **Codex** — requires a ChatGPT Pro subscription at [chatgpt.com](https://chatgpt.com).
+  If you are attending a live NVIDIA AI Day event, a one-month free promo code
+  may be provided on a card at the session.
+- **Claude Code** — requires an Anthropic account at [claude.ai](https://claude.ai).
+- **OpenClaw** or other agents — follow their respective setup instructions.
 
-2. A valid credit card is required to complete the subscription. The promotion
-   shows as 100% off for a month, so the amount due today is $0.00.
-
-   ![The Configure your plan checkout page: Pro plan with a $100 promotion applied and $0.00 due today, beside the card-number fields](assets/codex-checkout.png)
-
-3. **Optional but recommended:** cancel the subscription straight away to avoid
-   future charges. Go to **Settings → Billing**, then cancel. The month you have
-   already activated still runs.
-
-   ![The ChatGPT Billing settings page, where the subscription can be cancelled](assets/codex-cancel-billing.png)
-
-### Sign In to Codex
+### Sign In to Codex (if Using Codex)
 
 The course runs on remote machines, so the browser-redirect login does not work.
 You use the **device code** flow instead.
@@ -161,8 +155,7 @@ Signing in now means Part 2.1 starts with a working agent.
 - You have an NGC account and can sign in at [ngc.nvidia.com](https://ngc.nvidia.com).
 - You generated a **Personal API Key** with **NGC Catalog** permissions.
 - The key is saved somewhere you can copy it from when Part 2.1 asks.
-- Your ChatGPT Pro plan is activated.
-- `codex` signs you in with a device code and reaches the "Signed in with your ChatGPT account" prompt.
+- Your coding agent account is active and the CLI signs in successfully.
 ```
 
 ## What's Next

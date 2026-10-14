@@ -16,7 +16,7 @@ to run, in what order, and what you should be able to do when you finish.
 - **Level:** All levels — no prior VLM or Cosmos experience needed
 - **Format:** Three Jupyter notebooks, run cell by cell
 - **Primary model:** Cosmos 3 Reasoner
-- **Location:** `/dli/task/`
+- **Location:** Lab notebook folders (`lab-1-vlm/`, `lab-2-sdg/`, `lab-3-vlm-pt/`)
 ```
 
 ## Learning Objectives

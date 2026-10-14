@@ -1,0 +1,143 @@
+# docker-compose.yml — Fresh-instance deployment (no DLI, no dind).
+#
+# Uses the HOST Docker daemon directly via the Unix socket.
+# NIM/TAO containers started by the notebooks run alongside this stack
+# on the same host daemon — no nested Docker required.
+#
+# Prerequisites:
+#   1. Run setup.sh once to download models and containers:
+#        export NGC_CLI_API_KEY=<key>
+#        export HF_TOKEN=<token>
+#        bash setup.sh ~/vss-labs
+#   2. Set required host sysctls (Elasticsearch needs vm.max_map_count):
+#        sudo sysctl -w vm.max_map_count=262144
+#        sudo sysctl -w net.core.somaxconn=65535
+#        (add to /etc/sysctl.conf to persist across reboots)
+#   3. Copy .env.example to .env and fill in values.
+#   4. Bring up the stack:
+#        docker compose up -d
+#
+# IMPORTANT — VSS_LABS_DIR must be an absolute path (no ~).
+# Set it in .env or export it before running docker compose.
+# It must be the same value you passed to setup.sh.
+# Example: VSS_LABS_DIR=/home/ubuntu/vss-labs
+
+volumes:
+  vss_src:          # VSS blueprint checkout
+  aicity_runtime:   # aicity_cvfix4 alert-verification runtime files
+
+services:
+
+  # -------------------------------------------------------------------------
+  # lab — JupyterLab container where learners run the notebooks.
+  #
+  # Data is mounted at its HOST path so that NIM/TAO containers started by
+  # the notebooks via /var/run/docker.sock resolve bind-mount sources correctly
+  # on the host daemon side.
+  # -------------------------------------------------------------------------
+  lab:
+    image: ${LAB_IMAGE:-nvcr.io/nvidia/pytorch:26.06-py3}
+    runtime: nvidia
+    init: true
+    environment:
+      # TCP bridge to host Docker daemon (socat bridges unix socket to localhost:2375 at startup)
+      - DOCKER_HOST=tcp://localhost:2375
+      - NGC_CLI_ORG=${NGC_CLI_ORG:-nvidia}
+      - NGC_CLI_API_KEY=${NGC_CLI_API_KEY}
+      - HF_TOKEN=${HF_TOKEN}
+      - VSS_PROFILE=${VSS_PROFILE:-alerts}
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      # LAB_GPUS: comma-separated list of physical GPU indices to expose to this container.
+      # Notebooks use cuda:0, cuda:1, ... as relative indices within this set.
+      # Example: LAB_GPUS=0 (single GPU), LAB_GPUS=0,1 (two GPUs), LAB_GPUS=2,3
+      - CUDA_VISIBLE_DEVICES=${LAB_GPUS:-0}
+      - VSS_PUBLIC_PORT=${VSS_PUBLIC_PORT:-80}
+      # VSS endpoints — NIM/VSS containers run on the host daemon, so we reach
+      # them via host.docker.internal (resolved by the extra_hosts entry below).
+      - COURSE_LVS_BASE_URL=http://host.docker.internal:38111
+      - COURSE_LLM_BASE_URL=http://host.docker.internal:30081
+      - COURSE_VLM_BASE_URL=http://host.docker.internal:30082
+      - COURSE_VIOS_BASE_URL=http://host.docker.internal:30888/vst/api
+      - COURSE_ELK_BASE_URL=http://host.docker.internal:9200
+      # Lab paths — use HOST-absolute paths so Docker bind-mounts resolve
+      # correctly when NIM/TAO containers are started via the host socket.
+      - LAB_DATA_DIR=${VSS_LABS_DIR}/data
+      - HF_HOME=${HF_HOME:-${VSS_LABS_DIR}/data/hf_home}
+      - HF_HUB_OFFLINE=0
+      - TRANSFORMERS_OFFLINE=0
+      - NIM_CACHE=${VSS_LABS_DIR}/data/cosmos3-reasoner-cache
+      - NIM_IMAGE=nvcr.io/nim/nvidia/cosmos3-reasoner:1.7
+      - NIM_GPU=0
+      - NIM_PORT=30082
+      - NIM_MODEL_SIZE=${NIM_MODEL_SIZE:-nano}
+      - VLM_BASE_URL=http://host.docker.internal:30082
+      - NIM_READY_TIMEOUT_S=600
+      - NEMOTRON_NIM_IMAGE=nvcr.io/nim/nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:1.7.0-variant
+      - NEMOTRON_NIM_CONTAINER=nemotron-nim
+      - NEMOTRON_NIM_CACHE=${VSS_LABS_DIR}/data/nemotron-nim-cache
+      - NEMOTRON_NIM_PORT=30083
+      - NEMOTRON_NIM_BASE_URL=http://host.docker.internal:30083
+      - COSMOS3_REPO=${COSMOS3_REPO:-${VSS_LABS_DIR}/cosmos-framework}
+      - COSMOS3_CHECKPOINT_PATH=Cosmos3-Nano
+      - COSMOS3_NUM_GPUS=1
+      - COSMOS3_MASTER_ADDR=127.0.0.1
+      - COSMOS3_VENV_PYTHON=${COSMOS3_REPO:-${VSS_LABS_DIR}/cosmos-framework}/.venv/bin/python
+      - IMAGINAIRE_HF_CLI_ENVIRONMENT=${COSMOS3_REPO:-${VSS_LABS_DIR}/cosmos-framework}/.hf-cli-venv
+      - QWEN_GPU=0
+      - COSMOS_GPU=1
+      - DLI_BASE=${VSS_LABS_DIR}/data/lab3
+      - DLI_PTM=${VSS_LABS_DIR}/data/lab3/models/Cosmos3-Nano-VLM
+      - DLI_CACHE=${VSS_LABS_DIR}/data/lab3/cache
+      - DLI_DATA=${VSS_LABS_DIR}/data/lab3/dataset
+      - DLI_ROOT=${VSS_LABS_DIR}/data/lab3/work
+      - DLI_IMAGE=nvcr.io/nvidia/tao/tao-toolkit:7.2.0-cosmos-rl
+      - DLI_SKILL_BANK=${VSS_LABS_DIR}/data/lab3/tao-skill-bank
+      - DLI_SKILL_BANK_REF=7.2.0
+      - DLI_GPU=${DLI_GPU:-3}
+      - JUPYTER_TOKEN=${JUPYTER_TOKEN:-}
+      - COSMOS_ROOT=${VSS_LABS_DIR}/data/cosmos
+      - COSMOS3_NANO_REVISION=7a312c868bcce8e40b3eb40861300a9d0ba3fde1
+      - COSMOS_GUARDRAIL_REVISION=d6d4bfa899a71454a700907664f3e88f503950cf
+    volumes:
+      # Mount data at the same absolute path as the host so Docker bind-mounts
+      # issued from inside this container resolve correctly on the host daemon.
+      - ${VSS_LABS_DIR}/data:${VSS_LABS_DIR}/data
+      # Cosmos framework venv (the venv's Python symlink targets a uv-managed interpreter on the host)
+      - ${VSS_LABS_DIR}/cosmos-framework:${VSS_LABS_DIR}/cosmos-framework:ro
+      # uv Python interpreter the cosmos-framework venv symlinks to — resolved by setup-lab2.sh
+      # UV_PYTHON_PARENT is the directory containing the cpython-x.y.z-... install (and any version symlinks)
+      - ${UV_PYTHON_PARENT}:${UV_PYTHON_PARENT}:ro
+      # Docker socket — gives notebooks access to the host daemon
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Repo notebooks
+      - ./lab-1-vlm:/workspace/lab-1-vlm
+      - ./lab-2-sdg:/workspace/lab-2-sdg
+      - ./lab-3-vlm-pt:/workspace/lab-3-vlm-pt
+      # VSS paths (for learner VSS deployment from the lab container)
+      - vss_src:/opt/vss
+      - aicity_runtime:/opt/aicity-runtime
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    working_dir: /workspace
+    command: |
+      bash -c "
+        apt-get update -qq && apt-get install -y -q socat docker.io libxcb1 libx11-6 libxext6 libgl1 libglib2.0-0 libsm6 libxrender1 ffmpeg &&
+        socat TCP-LISTEN:2375,bind=127.0.0.1,fork,reuseaddr UNIX-CLIENT:/var/run/docker.sock &
+        sleep 1 &&
+        pip install -q jupyterlab openai 'diffusers>=0.33.0' transformers accelerate ipywidgets tomli-w requests-unixsocket2 uv &&
+        jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root --NotebookApp.token=${JUPYTER_TOKEN:-}
+      "
+
+  # -------------------------------------------------------------------------
+  # nginx — Reverse proxy. Routes / to JupyterLab (:8888).
+  # -------------------------------------------------------------------------
+  nginx:
+    image: nginx:1.25-alpine
+    ports:
+      - ${NGINX_PORT:-80}:80
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - lab
+    restart: unless-stopped
