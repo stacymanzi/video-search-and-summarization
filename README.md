@@ -42,8 +42,8 @@ To run the labs on a fresh machine outside the NVIDIA DLI environment:
 
 ```bash
 # 1. Clone this repo
-git clone https://github.com/stacymanzi/vss-smart-cities-launchable.git
-cd vss-smart-cities-launchable
+git clone -b vss-smart-cities-course https://github.com/stacymanzi/video-search-and-summarization.git
+cd video-search-and-summarization
 
 # 2. Set credentials
 export NGC_CLI_API_KEY=<your-ngc-key>   # https://ngc.nvidia.com/setup/api-key
@@ -52,17 +52,18 @@ export HF_TOKEN=<your-hf-token>          # https://huggingface.co/settings/token
 # 3. Run the one-time setup script (~1–2 hours, downloads models + containers)
 bash setup.sh ~/vss-labs
 
-# 4. Source env vars in every new terminal before opening notebooks
-source ~/vss-labs/env.sh
+# 4. Copy .env.example to .env and set LAB_GPUS to your available GPU indices
+cp .env.example .env
 
-# 5. Launch JupyterLab and run the notebooks in order:
+# 5. Launch the lab container
+docker compose up -d
+
+# 6. Open JupyterLab at http://localhost and run the notebooks in order:
 #    lab-1-vlm/lab_1.ipynb → lab-2-sdg/lab_2.ipynb → lab-3-vlm-pt/lab_3.ipynb
 ```
 
-The setup script (`setup.sh`) clones the [Cosmos Framework](https://github.com/NVIDIA/cosmos-framework),
-downloads all HuggingFace model weights, pulls the required `nvcr.io` containers,
-clones the TAO Skill Bank, and generates an `env.sh` that remaps all paths from
-the DLI environment to your local machine.
+The setup script clones the [Cosmos Framework](https://github.com/NVIDIA/cosmos-framework),
+downloads all HuggingFace model weights, and pulls the required `nvcr.io` containers.
 
 **What still requires manual placement after setup:**
 
@@ -76,46 +77,3 @@ the DLI environment to your local machine.
 
 > For Lab 3, set `BUILD_PTM=True` in `lab_3.ipynb` to convert the base
 > checkpoint from HuggingFace automatically instead of placing it manually.
-
-## Build the Documentation
-
-The site uses [uv](https://docs.astral.sh/uv/) for dependency management.
-
-```bash
-uv sync
-uv run sphinx-build -b html docs docs/_build/html
-uv run python -m http.server 8000 -d docs/_build/html/
-```
-
-Then open `http://localhost:8000`.
-
-One-command alternative that builds, serves, and opens a browser:
-
-```bash
-uv run python scripts/preview_learning_site.py
-```
-
-## Editions
-
-The site builds in multiple editions from one source:
-
-- `nvlearning_mode`: `course`, `lab`, or `hub`
-- `nvlearning_audience`: `public` or `internal`
-
-Facilitator material — shot lists, instructor cues, and the Part 2.3 time
-budget — is gated to the `internal` audience and does **not** appear in the
-default build. To produce the internal edition:
-
-```bash
-uv run sphinx-build -b html -D nvlearning_audience=internal docs docs/_build/internal
-```
-
-Add `-W --keep-going` to fail the build on warnings for release-quality output.
-
-## Authoring Notes
-
-- Course pages live in `docs/course/` and are listed in the `docs/index.md`
-  toctree in curriculum order.
-- Gate facilitator content with `:::{only} internal`. Do **not** put a section
-  heading inside an `{only}` block — headings leak into non-matching builds.
-  Use a bold label instead.
