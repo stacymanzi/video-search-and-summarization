@@ -22,7 +22,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BASE_DIR="${1:-$HOME/vss-labs}"
 DATA_DIR="$BASE_DIR/data"
-LAB2_HF_CACHE="$DATA_DIR/lab2-hf-cache"
+LAB2_HF_CACHE="$DATA_DIR/hf_home"
 COSMOS_REPO_DIR="$BASE_DIR/cosmos-framework"
 
 COSMOS3_NANO_REPO="nvidia/Cosmos3-Nano"
@@ -183,7 +183,6 @@ update_or_add() {
     fi
 }
 
-# Point HF_HOME at the fresh lab2 cache (no root-owned blobs)
 update_or_add "HF_HOME"      "$LAB2_HF_CACHE"   "$ENV_FILE"
 update_or_add "COSMOS3_REPO" "$COSMOS_REPO_DIR" "$ENV_FILE"
 
