@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# setup.sh — Bootstrap the VSS Smart Cities labs on a fresh machine outside DLI.
+# setup.sh — One-time bootstrap for all VSS Smart Cities labs on a fresh machine.
 #
 # Usage:
 #   bash setup.sh [BASE_DIR]
@@ -7,15 +7,16 @@
 # BASE_DIR defaults to $HOME/vss-labs.
 # Credentials are entered interactively — no export commands needed.
 # If NGC_CLI_API_KEY and HF_TOKEN are already exported, prompts are skipped.
+# Re-running is safe: model downloads, container pulls, and the venv build are
+# all skipped if already present.
 #
 # Requirements:
 #   - Linux x86_64 with NVIDIA driver r580+ (CUDA 13)
-#   - 2× H100 (or equivalent, ≥60 GB VRAM each)
-#   - ≥400 GB free disk in BASE_DIR
+#   - 2× A100 80 GB or H100 (or equivalent, ≥60 GB VRAM each)
+#   - ≥600 GB free disk in BASE_DIR
 #   - docker (with NVIDIA Container Toolkit)
-#   - python3.13 + uv
-#   - git + git-lfs
-#   - System packages: curl ffmpeg libx11-dev tree wget  (apt-get install)
+#   - git
+#   - System packages: curl ffmpeg  (installed automatically if missing)
 
 set -euo pipefail
 
@@ -41,6 +42,8 @@ QWEN_IMAGE_EDIT_REVISION="ac7f9318f633fc4b5778c59367c8128225f1e3de"
 COSMOS_GUARDRAIL_REPO="nvidia/Cosmos-Guardrail1"
 COSMOS_GUARDRAIL_REVISION="d6d4bfa899a71454a700907664f3e88f503950cf"
 QWEN_GUARD_REPO="Qwen/Qwen3Guard-Gen-0.6B"
+WAN_VAE_REPO="Wan-AI/Wan2.2-TI2V-5B"
+WAN_VAE_REVISION="921dbaf3f1674a56f47e83fb80a34bac8a8f203e"
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -180,10 +183,18 @@ print('  done.')
 "
 }
 
-download_hf_model "$COSMOS3_NANO_REPO"       "$COSMOS3_NANO_REVISION"    "Cosmos3-Nano (~50 GB)"
-download_hf_model "$QWEN_IMAGE_EDIT_REPO"    "$QWEN_IMAGE_EDIT_REVISION" "Qwen-Image-Edit (~57 GB)"
-download_hf_model "$COSMOS_GUARDRAIL_REPO"   "$COSMOS_GUARDRAIL_REVISION" "Cosmos-Guardrail1"
-download_hf_model "$QWEN_GUARD_REPO"         ""                           "Qwen3Guard-Gen-0.6B"
+snapshot_exists() {
+    local repo="$1" rev="$2" name model_dir
+    name="${repo//\//'--'}"
+    model_dir="$HF_HOME/hub/models--$name/snapshots/$rev"
+    [[ -d "$model_dir" ]] && [[ "$(ls -A "$model_dir" 2>/dev/null)" ]]
+}
+
+snapshot_exists "$COSMOS3_NANO_REPO"     "$COSMOS3_NANO_REVISION"     && info "Cosmos3-Nano already cached — skipping."     || download_hf_model "$COSMOS3_NANO_REPO"     "$COSMOS3_NANO_REVISION"     "Cosmos3-Nano (~50 GB)"
+snapshot_exists "$QWEN_IMAGE_EDIT_REPO"  "$QWEN_IMAGE_EDIT_REVISION"  && info "Qwen-Image-Edit already cached — skipping."  || download_hf_model "$QWEN_IMAGE_EDIT_REPO"  "$QWEN_IMAGE_EDIT_REVISION"  "Qwen-Image-Edit (~57 GB)"
+snapshot_exists "$COSMOS_GUARDRAIL_REPO" "$COSMOS_GUARDRAIL_REVISION" && info "Cosmos-Guardrail1 already cached — skipping." || download_hf_model "$COSMOS_GUARDRAIL_REPO" "$COSMOS_GUARDRAIL_REVISION" "Cosmos-Guardrail1"
+snapshot_exists "$QWEN_GUARD_REPO"       ""                           && info "Qwen3Guard already cached — skipping."        || download_hf_model "$QWEN_GUARD_REPO"       ""                           "Qwen3Guard-Gen-0.6B"
+snapshot_exists "$WAN_VAE_REPO"          "$WAN_VAE_REVISION"          && info "Wan2.2-TI2V-5B already cached — skipping."   || download_hf_model "$WAN_VAE_REPO"          "$WAN_VAE_REVISION"          "Wan2.2-TI2V-5B VAE (~15 GB)"
 
 # ---------------------------------------------------------------------------
 # 6. Docker login + pull containers
@@ -246,6 +257,15 @@ COSMOS3_VENV_PYTHON="$COSMOS_REPO_DIR/.venv/bin/python"
 [[ -x "$COSMOS3_VENV_PYTHON" ]] || error "Cosmos venv python not found at $COSMOS3_VENV_PYTHON after uv sync."
 info "Cosmos venv: $("$COSMOS3_VENV_PYTHON" --version 2>&1)"
 
+# Resolve the uv-managed Python the venv symlinks to — needed as a volume mount
+# so the symlink chain resolves inside Docker containers.
+UV_PYTHON_PARENT=""
+if [[ -L "$COSMOS3_VENV_PYTHON" ]]; then
+    _uv_bin="$(readlink -f "$COSMOS3_VENV_PYTHON")"
+    UV_PYTHON_PARENT="$(dirname "$(dirname "$(dirname "$_uv_bin")")")"
+    info "UV Python parent: $UV_PYTHON_PARENT"
+fi
+
 # ---------------------------------------------------------------------------
 # 9. Sample media files check
 # ---------------------------------------------------------------------------
@@ -266,6 +286,7 @@ EOF
 printf 'NGC_CLI_API_KEY=%s\n' "$NGC_CLI_API_KEY" >> "$ENV_FILE"
 printf 'HF_TOKEN=%s\n' "$HF_TOKEN" >> "$ENV_FILE"
 printf 'VSS_LABS_DIR=%s\n' "$BASE_DIR" >> "$ENV_FILE"
+[[ -n "$UV_PYTHON_PARENT" ]] && printf 'UV_PYTHON_PARENT=%s\n' "$UV_PYTHON_PARENT" >> "$ENV_FILE"
 cat >> "$ENV_FILE" << 'EOF'
 
 JUPYTER_TOKEN=
@@ -334,6 +355,7 @@ export DLI_SKILL_BANK_REF="${TAO_SKILL_BANK_TAG}"
 
 export DOCKER_HOST="unix:///var/run/docker.sock"
 EOF
+[[ -n "$UV_PYTHON_PARENT" ]] && printf 'export UV_PYTHON_PARENT=%s\n' "$UV_PYTHON_PARENT" >> "$BASE_DIR/env.sh"
 
 # ---------------------------------------------------------------------------
 # Done
