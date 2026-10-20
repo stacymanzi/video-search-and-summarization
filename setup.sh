@@ -152,10 +152,25 @@ mkdir -p \
     "$DATA_DIR/models" \
     "$DATA_DIR/vss-caches" \
     "$LAB3_DIR/models" \
-    "$LAB3_DIR/dataset/train" \
-    "$LAB3_DIR/dataset/val" \
+    "$LAB3_DIR/dataset/train/videos" \
+    "$LAB3_DIR/dataset/val/videos" \
     "$LAB3_DIR/cache" \
-    "$LAB3_DIR/work"
+    "$LAB3_DIR/work" \
+    "$LAB3_DIR/ptm_cache/huggingface" \
+    "$LAB3_DIR/ptm_cache/home/.cache" \
+    "$LAB3_DIR/ptm_cache/inductor" \
+    "$LAB3_DIR/ptm_cache/triton"
+
+# Placeholder media files so Lab 1 notebook checks pass (replace with real files)
+if [[ ! -f "$DATA_DIR/traffic.png" ]]; then
+    warn "No traffic.png found — creating a placeholder. Replace with a real traffic-camera image before running Lab 1."
+    printf '\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x00\x00\x00\x00:~\x9bU\x00\x00\x00\nIDATx\x9cc\xf8\x0f\x00\x00\x01\x01\x00\x05\x18\xd8N\x00\x00\x00\x00IEND\xaeB`\x82' \
+        > "$DATA_DIR/traffic.png"
+fi
+if [[ ! -f "$DATA_DIR/traffic_short.mp4" ]]; then
+    warn "No traffic_short.mp4 found — creating an empty placeholder. Replace with a real video clip before running Lab 1."
+    touch "$DATA_DIR/traffic_short.mp4"
+fi
 
 # ---------------------------------------------------------------------------
 # 5. HuggingFace model downloads
@@ -229,7 +244,52 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# 8. Cosmos3 framework venv (https://github.com/NVIDIA/cosmos-framework)
+# 8. Cosmos3-Nano checkpoint → Qwen3-VL safetensors (Lab 3 base model)
+# ---------------------------------------------------------------------------
+PTM_DIR="$LAB3_DIR/models/Cosmos3-Nano-VLM"
+info "Checking for Lab 3 base checkpoint at $PTM_DIR ..."
+if ls "$PTM_DIR"/*.safetensors 2>/dev/null | head -1 | grep -q .; then
+    info "Checkpoint already converted — skipping."
+else
+    info "Converting Cosmos3-Nano → Qwen3-VL safetensors inside TAO container (~60 min) ..."
+    docker run --rm --ipc=host --name tao-convert \
+        -u "$(id -u):$(id -g)" \
+        -e USER=taouser -e LOGNAME=taouser \
+        -e HOME=/cache/home \
+        -e XDG_CACHE_HOME=/cache/home/.cache \
+        -e TORCHINDUCTOR_CACHE_DIR=/cache/inductor \
+        -e TRITON_CACHE_DIR=/cache/triton \
+        -e BASE_MODEL=nvidia/Cosmos3-Nano \
+        -e BASE_REV="$COSMOS3_NANO_REVISION" \
+        -e OUTPUT_NAME=Cosmos3-Nano-VLM \
+        -e CONVERT_ENTRYPOINT=cosmos_rl.model_preparation.vlm_safetensors \
+        -e ARCH_MODEL=Qwen/Qwen3-VL-8B-Instruct \
+        -e PYTHONUNBUFFERED=1 \
+        -e HF_TOKEN="$HF_TOKEN" \
+        -v "$LAB3_DIR/models:/output" \
+        -v "$LAB3_DIR/ptm_cache:/cache" \
+        --entrypoint bash \
+        "$TAO_IMAGE" \
+        -lc '
+set -Eeuo pipefail
+export HF_HOME=/cache/huggingface
+cd /
+SRC="$(python - <<'"'"'PYX'"'"'
+import os
+from huggingface_hub import snapshot_download
+print(snapshot_download(os.environ["BASE_MODEL"],
+                        revision=os.environ["BASE_REV"] or None,
+                        cache_dir="/cache/huggingface"))
+PYX
+)"
+echo "[convert] source: $SRC"
+python -m "$CONVERT_ENTRYPOINT" --checkpoint-path "$SRC" --vlm-model-name "$ARCH_MODEL" -o "/output/$OUTPUT_NAME"
+'
+    info "Checkpoint conversion complete → $PTM_DIR"
+fi
+
+# ---------------------------------------------------------------------------
+# 10. Cosmos3 framework venv (https://github.com/NVIDIA/cosmos-framework)
 # ---------------------------------------------------------------------------
 info "Setting up Cosmos3 framework at $COSMOS_REPO_DIR ..."
 
@@ -267,14 +327,7 @@ if [[ -L "$COSMOS3_VENV_PYTHON" ]]; then
 fi
 
 # ---------------------------------------------------------------------------
-# 9. Sample media files check
-# ---------------------------------------------------------------------------
-info "Checking for sample media files..."
-[[ -f "$DATA_DIR/traffic.png" ]]       || warn "No traffic.png at $DATA_DIR/traffic.png — copy before running Lab 1."
-[[ -f "$DATA_DIR/traffic_short.mp4" ]] || warn "No traffic_short.mp4 at $DATA_DIR/traffic_short.mp4 — copy before running Lab 1."
-
-# ---------------------------------------------------------------------------
-# 10. Write .env for docker compose
+# 11. Write .env for docker compose
 # ---------------------------------------------------------------------------
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ENV_FILE="$REPO_DIR/.env"
@@ -303,7 +356,7 @@ EOF
 info ".env written."
 
 # ---------------------------------------------------------------------------
-# 11. Write env.sh (for running notebooks without docker compose)
+# 12. Write env.sh (for running notebooks without docker compose)
 # ---------------------------------------------------------------------------
 info "Writing $BASE_DIR/env.sh ..."
 cat > "$BASE_DIR/env.sh" << EOF
