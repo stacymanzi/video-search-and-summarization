@@ -95,8 +95,8 @@ GPU_COUNT=$(nvidia-smi --query-gpu=name --format=csv,noheader | wc -l)
 [[ "$GPU_COUNT" -ge 2 ]] || warn "Only $GPU_COUNT GPU(s) found. Labs 2 and 3 require 2× H100 (≥60 GB each). Continuing anyway."
 
 python3.13 -c "import huggingface_hub" 2>/dev/null \
-    || python3.13 -m pip install -q huggingface_hub \
-    || error "'huggingface_hub' could not be installed. Run: pip install huggingface_hub"
+    || uv pip install -q huggingface-hub --python python3.13 \
+    || error "'huggingface_hub' could not be installed. Run: uv pip install huggingface-hub --python python3.13"
 
 # ---------------------------------------------------------------------------
 # 3. Host sysctls (required by Elasticsearch / VSS)
