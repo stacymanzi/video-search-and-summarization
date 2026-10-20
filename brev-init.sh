@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 # brev-init.sh — One-time VM setup for the VSS Smart Cities Course on Brev.
 #
 # Paste this into the Brev "Setup Script" field (VM Mode).
