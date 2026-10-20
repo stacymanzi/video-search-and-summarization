@@ -53,7 +53,19 @@ if ! command -v uv &>/dev/null; then
     echo "[brev-init] Installing uv..."
     curl -LsSf https://astral.sh/uv/install.sh | sh
 fi
+# Use the full path so sudo calls later find uv regardless of PATH stripping
+UV="$HOME/.local/bin/uv"
 export PATH="$HOME/.local/bin:$PATH"
+
+# ---------------------------------------------------------------------------
+# 2b. Python 3.13 (required by cosmos-framework venv)
+# ---------------------------------------------------------------------------
+if ! command -v python3.13 &>/dev/null; then
+    echo "[brev-init] Installing Python 3.13 via deadsnakes PPA..."
+    add-apt-repository ppa:deadsnakes/ppa -y
+    apt-get update -qq
+    apt-get install -y -q python3.13 python3.13-venv python3.13-dev
+fi
 
 # ---------------------------------------------------------------------------
 # 3. Host sysctls (required by Elasticsearch / VSS in Part 2)
@@ -138,9 +150,11 @@ fi
 # 8. Python packages for JupyterLab on the host
 # ---------------------------------------------------------------------------
 echo "[brev-init] Installing Python packages..."
-pip install -q \
+# Use uv pip --system so packages land in the system Python (no venv required,
+# avoids the distutils error in Python 3.13, and doesn't need a separate pip).
+"$UV" pip install -q --system \
     openai "diffusers>=0.33.0" transformers accelerate \
-    ipywidgets tomli-w requests-unixsocket2 uv \
+    ipywidgets tomli-w requests-unixsocket2 \
     "huggingface-hub>=0.23" hf-xet
 
 # ---------------------------------------------------------------------------

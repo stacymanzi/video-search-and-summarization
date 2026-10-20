@@ -83,20 +83,42 @@ info "Credentials set."
 # ---------------------------------------------------------------------------
 info "Checking prerequisites..."
 
-command -v docker        >/dev/null 2>&1 || error "'docker' not found. Install Docker + NVIDIA Container Toolkit."
-command -v git           >/dev/null 2>&1 || error "'git' not found."
-command -v git-lfs       >/dev/null 2>&1 || error "'git-lfs' not found. Install with: sudo apt-get install git-lfs && git lfs install"
-command -v python3.13    >/dev/null 2>&1 || error "'python3.13' not found. Install Python 3.13."
-command -v uv            >/dev/null 2>&1 || error "'uv' not found. Install with: curl -LsSf https://astral.sh/uv/install.sh | sh"
-command -v nvidia-smi    >/dev/null 2>&1 || error "'nvidia-smi' not found. NVIDIA driver not installed."
-command -v ffmpeg        >/dev/null 2>&1 || warn "'ffmpeg' not found. Install with: sudo apt-get install -y ffmpeg"
+command -v docker     >/dev/null 2>&1 || error "'docker' not found. Install Docker + NVIDIA Container Toolkit."
+command -v git        >/dev/null 2>&1 || error "'git' not found."
+command -v nvidia-smi >/dev/null 2>&1 || error "'nvidia-smi' not found. NVIDIA driver not installed."
+command -v ffmpeg     >/dev/null 2>&1 || warn "'ffmpeg' not found. Install with: sudo apt-get install -y ffmpeg"
+
+# Auto-install git-lfs if missing
+if ! command -v git-lfs >/dev/null 2>&1; then
+    info "git-lfs not found — installing..."
+    sudo apt-get install -y -q git-lfs || error "Could not install git-lfs. Run: sudo apt-get install -y git-lfs"
+    git lfs install
+fi
+
+# Auto-install Python 3.13 if missing (via deadsnakes PPA on Ubuntu/Debian)
+if ! command -v python3.13 >/dev/null 2>&1; then
+    info "python3.13 not found — installing via deadsnakes PPA..."
+    sudo add-apt-repository ppa:deadsnakes/ppa -y
+    sudo apt-get update -qq
+    sudo apt-get install -y -q python3.13 python3.13-venv python3.13-dev \
+        || error "Could not install python3.13. Install manually from https://www.python.org/downloads/"
+fi
+
+# Auto-install uv if missing
+if ! command -v uv >/dev/null 2>&1; then
+    info "uv not found — installing..."
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+    export PATH="$HOME/.local/bin:$PATH"
+fi
+# Full path so sudo calls later find uv regardless of PATH stripping
+UV="$(command -v uv 2>/dev/null || echo "$HOME/.local/bin/uv")"
 
 GPU_COUNT=$(nvidia-smi --query-gpu=name --format=csv,noheader | wc -l)
 [[ "$GPU_COUNT" -ge 2 ]] || warn "Only $GPU_COUNT GPU(s) found. Labs 2 and 3 require 2× H100 (≥60 GB each). Continuing anyway."
 
 python3.13 -c "import huggingface_hub" 2>/dev/null \
-    || uv pip install -q huggingface-hub --python python3.13 --system \
-    || error "'huggingface_hub' could not be installed. Run: uv pip install huggingface-hub --python python3.13 --system"
+    || "$UV" pip install -q huggingface-hub --python python3.13 --system \
+    || error "'huggingface_hub' could not be installed. Run: $UV pip install huggingface-hub --python python3.13 --system"
 
 # ---------------------------------------------------------------------------
 # 3. Host sysctls (required by Elasticsearch / VSS)
