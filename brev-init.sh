@@ -53,6 +53,10 @@ if [[ -L "$COSMOS_REPO_DIR/.venv/bin/python" ]]; then
     UV_PYTHON_PARENT="$(dirname "$(dirname "$(dirname "$_bin")")")"
 fi
 
+echo "[init] Media files..."
+cp "$COURSE_DIR/data/traffic.png"       "$DATA_DIR/traffic.png"       2>/dev/null || true
+cp "$COURSE_DIR/data/traffic_short.mp4" "$DATA_DIR/traffic_short.mp4" 2>/dev/null || true
+
 echo "[init] TAO Skill Bank..."
 if [[ ! -d "$TAO_SKILL_BANK_DIR/.git" ]]; then
     git clone --branch 7.2.0 --depth 1 https://github.com/NVIDIA-TAO/tao-skill-bank.git "$TAO_SKILL_BANK_DIR"
