@@ -50,7 +50,7 @@ export NGC_CLI_API_KEY=<your-ngc-key>   # https://ngc.nvidia.com/setup/api-key
 export HF_TOKEN=<your-hf-token>          # https://huggingface.co/settings/tokens
 
 # 3. Run the one-time setup script (~1–2 hours, downloads models + containers)
-bash setup.sh ~/vss-labs
+bash setup.sh ~/models-and-assets
 
 # 4. Copy .env.example to .env and set LAB_GPUS to your available GPU indices
 cp .env.example .env
@@ -69,11 +69,11 @@ downloads all HuggingFace model weights, and pulls the required `nvcr.io` contai
 
 | Asset | Destination |
 |---|---|
-| Traffic camera image (`traffic.png`) | `~/vss-labs/data/traffic.png` |
-| Short traffic clip (`traffic_short.mp4`) | `~/vss-labs/data/traffic_short.mp4` |
-| Part 2 seed image + video | `~/vss-labs/data/Part-2/traffic_cam.png`, `input.mp4` |
-| Lab 3 train/val video dataset | `~/vss-labs/data/lab3/dataset/train/` and `val/` |
-| Lab 3 base checkpoint (optional) | `~/vss-labs/data/lab3/models/Cosmos3-Nano-VLM/` |
+| Traffic camera image (`traffic.png`) | `~/models-and-assets/data/traffic.png` |
+| Short traffic clip (`traffic_short.mp4`) | `~/models-and-assets/data/traffic_short.mp4` |
+| Part 2 seed image + video | `~/models-and-assets/data/Part-2/traffic_cam.png`, `input.mp4` |
+| Lab 3 train/val video dataset | `~/models-and-assets/data/lab3/dataset/train/` and `val/` |
+| Lab 3 base checkpoint (optional) | `~/models-and-assets/data/lab3/models/Cosmos3-Nano-VLM/` |
 
 > For Lab 3, set `BUILD_PTM=True` in `lab_3.ipynb` to convert the base
 > checkpoint from HuggingFace automatically instead of placing it manually.

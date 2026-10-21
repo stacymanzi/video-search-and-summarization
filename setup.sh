@@ -4,7 +4,7 @@
 # Usage:
 #   bash setup.sh [BASE_DIR]
 #
-# BASE_DIR defaults to $HOME/vss-labs.
+# BASE_DIR defaults to $HOME/models-and-assets.
 # Credentials are entered interactively — no export commands needed.
 # If NGC_CLI_API_KEY and HF_TOKEN are already exported, prompts are skipped.
 # Re-running is safe: model downloads, container pulls, and the venv build are
@@ -23,7 +23,7 @@ set -euo pipefail
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
-BASE_DIR="${1:-$HOME/vss-labs}"
+BASE_DIR="${1:-$HOME/models-and-assets}"
 DATA_DIR="$BASE_DIR/data"
 HF_HOME="$DATA_DIR/hf_home"
 COSMOS_REPO_DIR="$BASE_DIR/cosmos-framework"

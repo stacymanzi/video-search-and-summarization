@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-BASE_DIR="$HOME/vss-labs"
+BASE_DIR="$HOME/models-and-assets"
 DATA_DIR="$BASE_DIR/data"
 COSMOS_REPO_DIR="$BASE_DIR/cosmos-framework"
 TAO_SKILL_BANK_DIR="$DATA_DIR/lab3/tao-skill-bank"

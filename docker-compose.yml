@@ -8,7 +8,7 @@
 #   1. Run setup.sh once to download models and containers:
 #        export NGC_CLI_API_KEY=<key>
 #        export HF_TOKEN=<token>
-#        bash setup.sh ~/vss-labs
+#        bash setup.sh ~/models-and-assets
 #   2. Set required host sysctls (Elasticsearch needs vm.max_map_count):
 #        sudo sysctl -w vm.max_map_count=262144
 #        sudo sysctl -w net.core.somaxconn=65535
@@ -20,7 +20,7 @@
 # IMPORTANT — VSS_LABS_DIR must be an absolute path (no ~).
 # Set it in .env or export it before running docker compose.
 # It must be the same value you passed to setup.sh.
-# Example: VSS_LABS_DIR=/home/ubuntu/vss-labs
+# Example: VSS_LABS_DIR=/home/ubuntu/models-and-assets
 
 volumes:
   vss_src:          # VSS blueprint checkout
