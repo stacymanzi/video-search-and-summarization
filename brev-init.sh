@@ -1,11 +1,12 @@
 #!/bin/bash
 set -euo pipefail
 
-BASE_DIR="$HOME/models-and-assets"
+UBUNTU_HOME="/home/ubuntu"
+BASE_DIR="$UBUNTU_HOME/models-and-assets"
 DATA_DIR="$BASE_DIR/data"
 COSMOS_REPO_DIR="$BASE_DIR/cosmos-framework"
 TAO_SKILL_BANK_DIR="$DATA_DIR/lab3/tao-skill-bank"
-COURSE_DIR="$HOME/vss-smart-cities-course"
+COURSE_DIR="$UBUNTU_HOME/vss-smart-cities-course"
 
 echo "[init] System packages..."
 apt-get update -qq
@@ -32,6 +33,7 @@ mkdir -p "$DATA_DIR/hf_home" "$DATA_DIR/lab2-hf-cache" "$DATA_DIR/cosmos3-reason
          "$DATA_DIR/lab3/models" "$DATA_DIR/lab3/dataset/train" "$DATA_DIR/lab3/dataset/val" \
          "$DATA_DIR/lab3/cache" "$DATA_DIR/lab3/work"
 touch "$DATA_DIR/nemotron-nim-cache/zz_cache_complete"
+chown -R ubuntu:ubuntu "$BASE_DIR"
 
 echo "[init] Course repo..."
 if [[ ! -d "$COURSE_DIR/.git" ]]; then
