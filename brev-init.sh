@@ -12,11 +12,9 @@ apt-get update -qq
 apt-get install -y -q git git-lfs curl ffmpeg libx11-6 libxcb1 libxext6 libgl1 libglib2.0-0 libsm6 libxrender1 tree wget socat software-properties-common
 git lfs install --skip-smudge
 
-echo "[init] Python 3.13 (via uv)..."
-# Install uv first so we can use it to get Python 3.13 without the deadsnakes PPA
-if ! command -v uv &>/dev/null; then
-    curl -LsSf https://astral.sh/uv/install.sh | sh
-fi
+echo "[init] uv + Python 3.13..."
+# cosmos-framework pins uv to ==0.11.29; install that version directly
+curl -LsSf https://astral.sh/uv/0.11.29/install.sh | sh
 export PATH="$HOME/.local/bin:$PATH"
 uv python install 3.13
 
