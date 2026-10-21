@@ -16,7 +16,7 @@ echo "[init] uv + Python 3.13..."
 # cosmos-framework pins uv to ==0.11.29; install that version directly
 curl -LsSf https://astral.sh/uv/0.11.29/install.sh | sh
 export PATH="$HOME/.local/bin:$PATH"
-uv python install 3.13
+uv python install 3.12
 
 UV="$HOME/.local/bin/uv"
 
