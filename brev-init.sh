@@ -75,9 +75,23 @@ else
 fi
 
 echo "[init] socat bridge (Docker unix socket → tcp://localhost:2375)..."
-pkill -f "socat TCP-LISTEN:2375" 2>/dev/null || true
-nohup socat TCP-LISTEN:2375,bind=127.0.0.1,fork,reuseaddr UNIX-CLIENT:/var/run/docker.sock >/dev/null 2>&1 &
-echo "[init] socat started (pid $!)"
+cat > /etc/systemd/system/docker-tcp-bridge.service << 'EOF'
+[Unit]
+Description=socat bridge: Docker unix socket → tcp://localhost:2375
+After=docker.service
+Requires=docker.service
+
+[Service]
+ExecStart=/usr/bin/socat TCP-LISTEN:2375,bind=127.0.0.1,fork,reuseaddr UNIX-CLIENT:/var/run/docker.sock
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+EOF
+systemctl daemon-reload
+systemctl enable --now docker-tcp-bridge
+echo "[init] socat bridge started via systemd"
 
 echo "[init] Environment variables..."
 ENV_BLOCK="
