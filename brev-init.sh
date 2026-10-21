@@ -66,7 +66,7 @@ echo "[init] Python packages (Brev venv)..."
 BREV_VENV="/home/ubuntu/.venv"
 PKGS="openai diffusers>=0.33.0 transformers accelerate ipywidgets tomli-w requests-unixsocket2 huggingface-hub>=0.23 hf-xet"
 if [[ -d "$BREV_VENV" ]]; then
-    sudo -u ubuntu "$BREV_VENV/bin/pip3" install -q $PKGS
+    sudo -u ubuntu "$BREV_VENV/bin/python3" -m pip install -q $PKGS
 else
     "$UV" pip install -q --system $PKGS
 fi
