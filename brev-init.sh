@@ -12,18 +12,14 @@ apt-get update -qq
 apt-get install -y -q git git-lfs curl ffmpeg libx11-6 libxcb1 libxext6 libgl1 libglib2.0-0 libsm6 libxrender1 tree wget socat software-properties-common
 git lfs install --skip-smudge
 
-echo "[init] Python 3.13..."
-if ! command -v python3.13 &>/dev/null; then
-    add-apt-repository ppa:deadsnakes/ppa -y
-    apt-get update -qq
-    apt-get install -y -q python3.13 python3.13-venv python3.13-dev
-fi
-
-echo "[init] uv..."
+echo "[init] Python 3.13 (via uv)..."
+# Install uv first so we can use it to get Python 3.13 without the deadsnakes PPA
 if ! command -v uv &>/dev/null; then
     curl -LsSf https://astral.sh/uv/install.sh | sh
 fi
 export PATH="$HOME/.local/bin:$PATH"
+uv python install 3.13
+
 UV="$HOME/.local/bin/uv"
 
 echo "[init] Sysctls..."
