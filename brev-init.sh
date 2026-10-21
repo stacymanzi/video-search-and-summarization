@@ -64,8 +64,19 @@ if [[ ! -d "$TAO_SKILL_BANK_DIR/.git" ]]; then
     git clone --branch 7.2.0 --depth 1 https://github.com/NVIDIA-TAO/tao-skill-bank.git "$TAO_SKILL_BANK_DIR"
 fi
 
-echo "[init] Python packages..."
+echo "[init] Python packages (system + Brev venv)..."
 "$UV" pip install -q --system openai "diffusers>=0.33.0" transformers accelerate ipywidgets tomli-w requests-unixsocket2 "huggingface-hub>=0.23" hf-xet
+# Also install into Brev's managed Jupyter venv if it exists
+BREV_VENV="/home/ubuntu/.venv"
+if [[ -d "$BREV_VENV" ]]; then
+    "$BREV_VENV/bin/python" -m ensurepip --upgrade 2>/dev/null || true
+    "$BREV_VENV/bin/pip" install -q openai "diffusers>=0.33.0" transformers accelerate ipywidgets tomli-w requests-unixsocket2 "huggingface-hub>=0.23" hf-xet || true
+fi
+
+echo "[init] socat bridge (Docker unix socket → tcp://localhost:2375)..."
+pkill -f "socat TCP-LISTEN:2375" 2>/dev/null || true
+nohup socat TCP-LISTEN:2375,bind=127.0.0.1,fork,reuseaddr UNIX-CLIENT:/var/run/docker.sock >/dev/null 2>&1 &
+echo "[init] socat started (pid $!)"
 
 echo "[init] Environment variables..."
 ENV_BLOCK="
@@ -110,7 +121,7 @@ DLI_IMAGE=nvcr.io/nvidia/tao/tao-toolkit:7.2.0-cosmos-rl
 DLI_SKILL_BANK_REF=7.2.0
 DLI_GPU=1
 LAB_GPUS=0,1
-DOCKER_HOST=unix:///var/run/docker.sock
+DOCKER_HOST=tcp://localhost:2375
 HF_HUB_OFFLINE=0
 TRANSFORMERS_OFFLINE=0"
 
