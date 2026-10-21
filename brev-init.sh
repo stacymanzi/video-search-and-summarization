@@ -62,13 +62,13 @@ if [[ ! -d "$TAO_SKILL_BANK_DIR/.git" ]]; then
     git clone --branch 7.2.0 --depth 1 https://github.com/NVIDIA-TAO/tao-skill-bank.git "$TAO_SKILL_BANK_DIR"
 fi
 
-echo "[init] Python packages (system + Brev venv)..."
-"$UV" pip install -q --system openai "diffusers>=0.33.0" transformers accelerate ipywidgets tomli-w requests-unixsocket2 "huggingface-hub>=0.23" hf-xet
-# Also install into Brev's managed Jupyter venv if it exists
+echo "[init] Python packages (Brev venv)..."
 BREV_VENV="/home/ubuntu/.venv"
+PKGS="openai diffusers>=0.33.0 transformers accelerate ipywidgets tomli-w requests-unixsocket2 huggingface-hub>=0.23 hf-xet"
 if [[ -d "$BREV_VENV" ]]; then
-    "$BREV_VENV/bin/python" -m ensurepip --upgrade 2>/dev/null || true
-    "$BREV_VENV/bin/pip" install -q openai "diffusers>=0.33.0" transformers accelerate ipywidgets tomli-w requests-unixsocket2 "huggingface-hub>=0.23" hf-xet || true
+    sudo -u ubuntu "$BREV_VENV/bin/pip" install -q $PKGS
+else
+    "$UV" pip install -q --system $PKGS
 fi
 
 echo "[init] socat bridge (Docker unix socket → tcp://localhost:2375)..."
