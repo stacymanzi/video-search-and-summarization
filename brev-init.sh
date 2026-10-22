@@ -28,7 +28,7 @@ grep -q vm.max_map_count /etc/sysctl.conf 2>/dev/null || echo "vm.max_map_count=
 grep -q net.core.somaxconn /etc/sysctl.conf 2>/dev/null || echo "net.core.somaxconn=65535" >> /etc/sysctl.conf
 
 echo "[init] Directories..."
-mkdir -p "$DATA_DIR/hf_home" "$DATA_DIR/lab2-hf-cache" "$DATA_DIR/cosmos3-reasoner-cache" \
+mkdir -p "$DATA_DIR/hf_home" "$DATA_DIR/cosmos3-reasoner-cache" \
          "$DATA_DIR/nemotron-nim-cache" "$DATA_DIR/Part-2" \
          "$DATA_DIR/lab3/models" "$DATA_DIR/lab3/dataset/train" "$DATA_DIR/lab3/dataset/val" \
          "$DATA_DIR/lab3/cache" "$DATA_DIR/lab3/work"
@@ -107,7 +107,7 @@ echo "[init] Environment variables..."
 ENV_BLOCK="
 VSS_LABS_DIR=$BASE_DIR
 LAB_DATA_DIR=$DATA_DIR
-HF_HOME=$DATA_DIR/lab2-hf-cache
+HF_HOME=$DATA_DIR/hf_home
 NIM_CACHE=$DATA_DIR/cosmos3-reasoner-cache
 NIM_IMAGE=nvcr.io/nim/nvidia/cosmos3-reasoner:1.7
 NIM_GPU=0
