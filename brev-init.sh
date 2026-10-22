@@ -49,6 +49,16 @@ if [[ ! -x "$COSMOS_REPO_DIR/.venv/bin/python" ]]; then
     (cd "$COSMOS_REPO_DIR" && "$UV" sync --all-extras --group=cu130-train)
 fi
 
+# cosmos-framework spawns uv as a subprocess; it must be in system PATH
+ln -sf "$HOME/.local/bin/uv" /usr/local/bin/uv
+
+# Pre-build hf_cli venv so cosmos-framework's guardrail download works on first run
+HF_CLI_DIR="$COSMOS_REPO_DIR/cosmos_framework/utils/hf_cli"
+if [[ -f "$HF_CLI_DIR/pyproject.toml" && ! -d "$COSMOS_REPO_DIR/.hf-cli-venv" ]]; then
+    echo "[init] Pre-building hf_cli venv..."
+    (cd "$HF_CLI_DIR" && UV_OFFLINE=0 "$UV" sync --locked --no-default-groups)
+fi
+
 UV_PYTHON_PARENT=""
 if [[ -L "$COSMOS_REPO_DIR/.venv/bin/python" ]]; then
     _bin="$(readlink -f "$COSMOS_REPO_DIR/.venv/bin/python")"
