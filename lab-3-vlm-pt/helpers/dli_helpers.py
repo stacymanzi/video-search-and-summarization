@@ -507,6 +507,19 @@ def per_condition(results_json, annotations, classes):
 
 # -------------------------------------------------------------------- docker
 
+_CONTAINER_LD_LIBRARY_PATH = ":".join([
+    "/usr/local/lib",
+    "/usr/local/lib/python3.12/dist-packages/torch/lib",
+    "/usr/local/lib/python3.12/dist-packages/torch_tensorrt/lib",
+    "/usr/local/nixlbench/lib",
+    "/opt/amazon/efa/lib",
+    "/usr/lib",
+    "/usr/local/nvidia/lib",
+    "/usr/local/nvidia/lib64",
+    "/usr/local/nixl/lib/x86_64-linux-gnu",
+])
+
+
 def _docker_env(job_name: str, results_in_container="/results") -> list[str]:
     """Env every TAO cosmos-rl container needs when run as a non-root host uid.
 
@@ -516,6 +529,11 @@ def _docker_env(job_name: str, results_in_container="/results") -> list[str]:
       TAO_API_JOB_ID      _get_results_dir() otherwise returns a RELATIVE
                           "./results" and fails with PermissionError
       *_CACHE_DIR/HOME    keep every cache inside the writable results mount
+      LD_LIBRARY_PATH     the image puts /usr/local/cuda/compat first; that older libcuda
+                          shadows the host driver when the host is newer, and torch fails
+                          with cuInit CUDA_ERROR_SYSTEM_DRIVER_MISMATCH (803). Dropping the
+                          compat entries lets the host driver (injected by the nvidia
+                          runtime) be used. Same paths as the image default, minus compat.
     """
     return [
         "-e", "USER=taouser", "-e", "LOGNAME=taouser", "-e", f"HOME={results_in_container}",
@@ -526,6 +544,7 @@ def _docker_env(job_name: str, results_in_container="/results") -> list[str]:
         "-e", f"HF_HOME={results_in_container}/.hf",
         # The lab has no network: any incidental hub lookup must fail fast instead of hanging on DNS.
         "-e", "HF_HUB_OFFLINE=1", "-e", "TRANSFORMERS_OFFLINE=1",
+        "-e", "LD_LIBRARY_PATH=" + _CONTAINER_LD_LIBRARY_PATH,
     ]
 
 
