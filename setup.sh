@@ -201,8 +201,23 @@ print('  done.')
 snapshot_exists() {
     local repo="$1" rev="$2" name model_dir
     name="${repo//\//'--'}"
+    # Check both standard layout (HF_HOME/hub/models--*) and hf-xet layout (HF_HOME/models--*)
     model_dir="$HF_HOME/hub/models--$name/snapshots/$rev"
+    [[ -d "$model_dir" ]] && [[ "$(ls -A "$model_dir" 2>/dev/null)" ]] && return 0
+    model_dir="$HF_HOME/models--$name/snapshots/$rev"
     [[ -d "$model_dir" ]] && [[ "$(ls -A "$model_dir" 2>/dev/null)" ]]
+}
+
+write_refs_main() {
+    local repo="$1" rev="$2" name refs_dir
+    name="${repo//\//'--'}"
+    for prefix in "hub/" ""; do
+        refs_dir="$HF_HOME/${prefix}models--$name/refs"
+        if [[ -d "$HF_HOME/${prefix}models--$name" ]]; then
+            mkdir -p "$refs_dir"
+            echo "$rev" > "$refs_dir/main"
+        fi
+    done
 }
 
 snapshot_exists "$COSMOS3_NANO_REPO"     "$COSMOS3_NANO_REVISION"     && info "Cosmos3-Nano already cached — skipping."     || download_hf_model "$COSMOS3_NANO_REPO"     "$COSMOS3_NANO_REVISION"     "Cosmos3-Nano (~50 GB)"
@@ -210,6 +225,11 @@ snapshot_exists "$QWEN_IMAGE_EDIT_REPO"  "$QWEN_IMAGE_EDIT_REVISION"  && info "Q
 snapshot_exists "$COSMOS_GUARDRAIL_REPO" "$COSMOS_GUARDRAIL_REVISION" && info "Cosmos-Guardrail1 already cached — skipping." || download_hf_model "$COSMOS_GUARDRAIL_REPO" "$COSMOS_GUARDRAIL_REVISION" "Cosmos-Guardrail1"
 snapshot_exists "$QWEN_GUARD_REPO"       ""                           && info "Qwen3Guard already cached — skipping."        || download_hf_model "$QWEN_GUARD_REPO"       ""                           "Qwen3Guard-Gen-0.6B"
 snapshot_exists "$WAN_VAE_REPO"          "$WAN_VAE_REVISION"          && info "Wan2.2-TI2V-5B already cached — skipping."   || download_hf_model "$WAN_VAE_REPO"          "$WAN_VAE_REVISION"          "Wan2.2-TI2V-5B VAE (~15 GB)"
+
+# Write refs/main for repos cosmos-framework looks up by branch name
+write_refs_main "$COSMOS3_NANO_REPO"     "$COSMOS3_NANO_REVISION"
+write_refs_main "$COSMOS_GUARDRAIL_REPO" "$COSMOS_GUARDRAIL_REVISION"
+write_refs_main "$QWEN_GUARD_REPO"       "$(ls "$HF_HOME/models--${QWEN_GUARD_REPO//\//'--'}/snapshots/" 2>/dev/null | head -1)"
 
 # ---------------------------------------------------------------------------
 # 6. Docker login + pull containers
