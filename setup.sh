@@ -215,7 +215,7 @@ write_refs_main() {
         refs_dir="$HF_HOME/${prefix}models--$name/refs"
         if [[ -d "$HF_HOME/${prefix}models--$name" ]]; then
             mkdir -p "$refs_dir"
-            echo "$rev" > "$refs_dir/main"
+            printf %s "$rev" > "$refs_dir/main"
         fi
     done
 }
