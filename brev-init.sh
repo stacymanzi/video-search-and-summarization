@@ -66,7 +66,7 @@ fi
 
 echo "[init] Python packages (Brev venv)..."
 BREV_VENV="/home/ubuntu/.venv"
-PKGS="openai diffusers>=0.33.0 transformers accelerate ipywidgets tomli-w requests-unixsocket2 huggingface-hub>=0.23 hf-xet"
+PKGS="openai diffusers>=0.33.0 transformers accelerate ipywidgets tomli-w requests-unixsocket2 huggingface-hub>=0.23 hf-xet torchvision"
 if [[ -d "$BREV_VENV" ]]; then
     # Use uv to install into the venv — avoids pip bootstrap issues entirely
     sudo -u ubuntu "$UV" pip install -q --python "$BREV_VENV/bin/python3" $PKGS
