@@ -125,7 +125,7 @@ services:
         apt-get update -qq && apt-get install -y -q socat docker.io libxcb1 libx11-6 libxext6 libgl1 libglib2.0-0 libsm6 libxrender1 ffmpeg &&
         socat TCP-LISTEN:2375,bind=127.0.0.1,fork,reuseaddr UNIX-CLIENT:/var/run/docker.sock &
         sleep 1 &&
-        pip install -q jupyterlab openai 'diffusers>=0.33.0' transformers accelerate ipywidgets tomli-w requests-unixsocket2 uv &&
+        pip install -q jupyterlab openai 'diffusers>=0.33.0' transformers accelerate ipywidgets tomli-w matplotlib pillow requests-unixsocket2 uv &&
         jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root --NotebookApp.token=${JUPYTER_TOKEN:-}
       "
 

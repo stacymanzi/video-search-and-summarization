@@ -161,13 +161,22 @@ mkdir -p \
     "$LAB3_DIR/ptm_cache/inductor" \
     "$LAB3_DIR/ptm_cache/triton"
 
+# Lab 1 media ships in the repo's data/ folder - copy the real files first.
+REPO_DATA_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/data"
+for _f in traffic.png traffic_short.mp4; do
+    if [[ ! -s "$DATA_DIR/$_f" && -s "$REPO_DATA_DIR/$_f" ]]; then
+        cp "$REPO_DATA_DIR/$_f" "$DATA_DIR/$_f"
+        info "Copied $_f from the repo."
+    fi
+done
+
 # Placeholder media files so Lab 1 notebook checks pass (replace with real files)
-if [[ ! -f "$DATA_DIR/traffic.png" ]]; then
+if [[ ! -s "$DATA_DIR/traffic.png" ]]; then
     warn "No traffic.png found — creating a placeholder. Replace with a real traffic-camera image before running Lab 1."
     printf '\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x00\x00\x00\x00:~\x9bU\x00\x00\x00\nIDATx\x9cc\xf8\x0f\x00\x00\x01\x01\x00\x05\x18\xd8N\x00\x00\x00\x00IEND\xaeB`\x82' \
         > "$DATA_DIR/traffic.png"
 fi
-if [[ ! -f "$DATA_DIR/traffic_short.mp4" ]]; then
+if [[ ! -s "$DATA_DIR/traffic_short.mp4" ]]; then
     warn "No traffic_short.mp4 found — creating an empty placeholder. Replace with a real video clip before running Lab 1."
     touch "$DATA_DIR/traffic_short.mp4"
 fi
