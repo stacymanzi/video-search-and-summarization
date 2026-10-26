@@ -1,38 +1,28 @@
 #!/bin/bash
 # setup.sh — One-time bootstrap for VSS Smart Cities labs.
 #
-# On Brev:     called automatically as root at instance creation.
-#              Credentials come from Brev secrets (NGC_CLI_API_KEY, HF_TOKEN).
-# Standalone:  run as a regular user with sudo; prompts for credentials if unset.
+# Works as any user — uses sudo for privileged commands.
+# On Brev: called automatically as root via the instance hook.
+# Standalone: run as ubuntu (passwordless sudo required).
 #
-# Usage (standalone):
+# Usage:
 #   bash setup.sh [BASE_DIR]
 #
-# BASE_DIR defaults to /home/ubuntu/models-and-assets (root) or ~/models-and-assets (user).
+# Credentials come from Brev secrets (NGC_CLI_API_KEY, HF_TOKEN) or are
+# prompted interactively if not already set.
 # Re-running is safe: every step is skipped if already complete.
 
 set -euo pipefail
 
-# ── Mode detection ─────────────────────────────────────────────────────────────
-IS_ROOT=0; [[ "$(id -u)" == "0" ]] && IS_ROOT=1
-
 UBUNTU_HOME="/home/ubuntu"
-if [[ $IS_ROOT == 1 ]]; then
-    DEFAULT_BASE="$UBUNTU_HOME/models-and-assets"
-    DEFAULT_COURSE="$UBUNTU_HOME/vss-smart-cities-course"
-else
-    DEFAULT_BASE="$HOME/models-and-assets"
-    DEFAULT_COURSE="$HOME/vss-smart-cities-course"
-fi
-
-BASE_DIR="${1:-$DEFAULT_BASE}"
+BASE_DIR="${1:-$UBUNTU_HOME/models-and-assets}"
 DATA_DIR="$BASE_DIR/data"
 HF_HOME="$DATA_DIR/hf_home"
 COSMOS_REPO_DIR="$BASE_DIR/cosmos-framework"
 TAO_SKILL_BANK_DIR="$DATA_DIR/lab3/tao-skill-bank"
 LAB3_DIR="$DATA_DIR/lab3"
-COURSE_DIR="$DEFAULT_COURSE"
-BREV_VENV="/home/ubuntu/.venv"
+COURSE_DIR="$UBUNTU_HOME/vss-smart-cities-course"
+BREV_VENV="$UBUNTU_HOME/.venv"
 
 # Container images
 NIM_COSMOS_IMAGE="nvcr.io/nim/nvidia/cosmos3-reasoner:1.7"
@@ -56,7 +46,7 @@ info()  { echo -e "${GREEN}[init]${NC}  $*"; }
 warn()  { echo -e "${YELLOW}[warn]${NC}  $*"; }
 error() { echo -e "${RED}[error]${NC} $*" >&2; exit 1; }
 
-# ── 1. Credentials (collect first so the rest runs unattended) ─────────────────
+# ── 1. Credentials ─────────────────────────────────────────────────────────────
 if [[ -z "${NGC_CLI_API_KEY:-}" ]]; then
     echo ""
     echo "  NGC API key required. Generate at: https://ngc.nvidia.com/setup/api-key"
@@ -75,61 +65,42 @@ if [[ -z "${HF_TOKEN:-}" ]]; then
 fi
 info "Credentials set."
 
-# ── 2. System packages (root only) ─────────────────────────────────────────────
-if [[ $IS_ROOT == 1 ]]; then
-    info "System packages..."
-    apt-get update -qq
-    apt-get install -y -q git git-lfs curl ffmpeg libx11-6 libxcb1 libxext6 libgl1 \
-        libglib2.0-0 libsm6 libxrender1 tree wget socat software-properties-common
-    git lfs install --skip-smudge
-else
-    info "Checking prerequisites..."
-    command -v git     >/dev/null 2>&1 || error "'git' not found."
-    command -v docker  >/dev/null 2>&1 || error "'docker' not found. Install Docker + NVIDIA Container Toolkit."
-    command -v nvidia-smi >/dev/null 2>&1 || error "'nvidia-smi' not found. NVIDIA driver not installed."
-    command -v ffmpeg  >/dev/null 2>&1 || warn "'ffmpeg' not found. Install: sudo apt-get install -y ffmpeg"
-    if ! command -v git-lfs >/dev/null 2>&1; then
-        sudo apt-get install -y -q git-lfs
-        git lfs install
-    fi
-    GPU_COUNT=$(nvidia-smi --query-gpu=name --format=csv,noheader | wc -l)
-    [[ "$GPU_COUNT" -ge 2 ]] || warn "Only $GPU_COUNT GPU(s) found. Labs 2–3 require 2× H100 (≥60 GB each)."
-fi
+# ── 2. System packages ─────────────────────────────────────────────────────────
+info "System packages..."
+sudo apt-get update -qq
+sudo apt-get install -y -q git git-lfs curl ffmpeg libx11-6 libxcb1 libxext6 libgl1 \
+    libglib2.0-0 libsm6 libxrender1 tree wget socat software-properties-common
+git lfs install --skip-smudge
+
+GPU_COUNT=$(nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null | wc -l || echo 0)
+[[ "$GPU_COUNT" -ge 2 ]] || warn "Only $GPU_COUNT GPU(s) found. Labs 2–3 require 2× H100 (≥60 GB each)."
 
 # ── 3. uv 0.11.29 + Python 3.12 ───────────────────────────────────────────────
 info "uv + Python..."
-# cosmos-framework pins uv to ==0.11.29; install that version directly
 curl -LsSf https://astral.sh/uv/0.11.29/install.sh | sh
 export PATH="$HOME/.local/bin:$PATH"
 UV="$HOME/.local/bin/uv"
 "$UV" python install 3.12
 PYTHON="$("$UV" python find 3.12)"
 
-# Make uv visible in system PATH so cosmos-framework subprocesses find it
-ln -sf "$HOME/.local/bin/uv" /usr/local/bin/uv 2>/dev/null || \
-    sudo ln -sf "$HOME/.local/bin/uv" /usr/local/bin/uv 2>/dev/null || true
+# Make uv reachable by cosmos-framework subprocesses
+sudo ln -sf "$HOME/.local/bin/uv" /usr/local/bin/uv
 
 # ── 4. Sysctls ────────────────────────────────────────────────────────────────
 info "Sysctls..."
-_sysctl() {
-    if [[ $IS_ROOT == 1 ]]; then sysctl -w "$1" || true;
-    else sudo sysctl -w "$1" || true; fi
-}
-_sysctl vm.max_map_count=262144
-_sysctl net.core.somaxconn=65535
+sudo sysctl -w vm.max_map_count=262144 || true
+sudo sysctl -w net.core.somaxconn=65535 || true
 grep -q vm.max_map_count /etc/sysctl.conf 2>/dev/null || echo "vm.max_map_count=262144" | sudo tee -a /etc/sysctl.conf >/dev/null
 grep -q net.core.somaxconn /etc/sysctl.conf 2>/dev/null || echo "net.core.somaxconn=65535" | sudo tee -a /etc/sysctl.conf >/dev/null
 
-# ── 5. Python packages (Brev venv — root only) ────────────────────────────────
-if [[ $IS_ROOT == 1 ]]; then
-    info "Python packages (Brev venv)..."
-    PKGS="openai diffusers>=0.33.0 transformers accelerate ipywidgets tomli-w \
-          requests-unixsocket2 huggingface-hub>=0.23 hf-xet torch torchvision matplotlib pillow"
-    if [[ -d "$BREV_VENV" ]]; then
-        sudo -u ubuntu "$UV" pip install -q --python "$BREV_VENV/bin/python3" $PKGS
-    else
-        "$UV" pip install -q --system $PKGS
-    fi
+# ── 5. Python packages (Brev venv) ────────────────────────────────────────────
+info "Python packages (Brev venv)..."
+PKGS="openai diffusers>=0.33.0 transformers accelerate ipywidgets tomli-w \
+      requests-unixsocket2 huggingface-hub>=0.23 hf-xet torch torchvision matplotlib pillow"
+if [[ -d "$BREV_VENV" ]]; then
+    "$UV" pip install -q --python "$BREV_VENV/bin/python3" $PKGS
+else
+    "$UV" pip install -q --python "$PYTHON" $PKGS
 fi
 
 # ── 6. Directories ────────────────────────────────────────────────────────────
@@ -150,10 +121,9 @@ mkdir -p \
     "$LAB3_DIR/ptm_cache/home/.cache" \
     "$LAB3_DIR/ptm_cache/inductor" \
     "$LAB3_DIR/ptm_cache/triton"
+sudo chown -R ubuntu:ubuntu "$BASE_DIR" 2>/dev/null || true
 
-[[ $IS_ROOT == 1 ]] && chown -R ubuntu:ubuntu "$BASE_DIR" || true
-
-# ── 6. Course repo + media files ──────────────────────────────────────────────
+# ── 7. Course repo + media files ──────────────────────────────────────────────
 info "Course repo..."
 if [[ ! -d "$COURSE_DIR/.git" ]]; then
     git clone -b vss-smart-cities-course \
@@ -162,9 +132,9 @@ fi
 cp "$COURSE_DIR/data/traffic.png"       "$DATA_DIR/traffic.png"       2>/dev/null || \
     warn "traffic.png missing from course repo — copy manually to $DATA_DIR/traffic.png"
 cp "$COURSE_DIR/data/traffic_short.mp4" "$DATA_DIR/traffic_short.mp4" 2>/dev/null || \
-    warn "traffic_short.mp4 missing from course repo — copy manually to $DATA_DIR/traffic_short.mp4"
+    warn "traffic_short.mp4 missing — copy manually to $DATA_DIR/traffic_short.mp4"
 
-# ── 7. cosmos-framework ────────────────────────────────────────────────────────
+# ── 8. cosmos-framework ────────────────────────────────────────────────────────
 info "cosmos-framework..."
 if [[ ! -d "$COSMOS_REPO_DIR/.git" ]]; then
     git clone https://github.com/NVIDIA/cosmos-framework.git "$COSMOS_REPO_DIR"
@@ -187,26 +157,27 @@ if [[ -L "$COSMOS_REPO_DIR/.venv/bin/python" ]]; then
     UV_PYTHON_PARENT="$(dirname "$(dirname "$(dirname "$_bin")")")"
 fi
 
-# ── 8. TAO Skill Bank ──────────────────────────────────────────────────────────
+# ── 9. TAO Skill Bank ──────────────────────────────────────────────────────────
 info "TAO Skill Bank..."
 if [[ ! -d "$TAO_SKILL_BANK_DIR/.git" ]]; then
     git clone --branch "$TAO_SKILL_BANK_TAG" --depth 1 \
         https://github.com/NVIDIA-TAO/tao-skill-bank.git "$TAO_SKILL_BANK_DIR"
 fi
 
-# ── 9. HuggingFace model downloads ─────────────────────────────────────────────
+# ── 10. HuggingFace model downloads ───────────────────────────────────────────
 info "HuggingFace login..."
 HF_HOME="$HF_HOME" "$PYTHON" -c "
 from huggingface_hub import login
 import os
 login(token=os.environ['HF_TOKEN'], add_to_git_credential=False)
-" 2>/dev/null || \
-"$UV" pip install -q --python "$PYTHON" huggingface-hub && \
-HF_HOME="$HF_HOME" "$PYTHON" -c "
+" 2>/dev/null || {
+    "$UV" pip install -q --python "$PYTHON" huggingface-hub
+    HF_HOME="$HF_HOME" "$PYTHON" -c "
 from huggingface_hub import login
 import os
 login(token=os.environ['HF_TOKEN'], add_to_git_credential=False)
 "
+}
 
 snapshot_exists() {
     local repo="$1" rev="$2" name model_dir
@@ -241,23 +212,23 @@ write_refs_main() {
         refs_dir="$HF_HOME/${prefix}models--$name/refs"
         if [[ -d "$HF_HOME/${prefix}models--$name" ]]; then
             mkdir -p "$refs_dir"
-            echo "$rev" > "$refs_dir/main"
+            printf '%s' "$rev" > "$refs_dir/main"
         fi
     done
 }
 
-snapshot_exists "$COSMOS3_NANO_REPO"     "$COSMOS3_NANO_REVISION"     && info "Cosmos3-Nano cached."     || download_hf_model "$COSMOS3_NANO_REPO"     "$COSMOS3_NANO_REVISION"     "Cosmos3-Nano (~50 GB)"
-snapshot_exists "$QWEN_IMAGE_EDIT_REPO"  "$QWEN_IMAGE_EDIT_REVISION"  && info "Qwen-Image-Edit cached."  || download_hf_model "$QWEN_IMAGE_EDIT_REPO"  "$QWEN_IMAGE_EDIT_REVISION"  "Qwen-Image-Edit (~57 GB)"
+snapshot_exists "$COSMOS3_NANO_REPO"     "$COSMOS3_NANO_REVISION"     && info "Cosmos3-Nano cached."      || download_hf_model "$COSMOS3_NANO_REPO"     "$COSMOS3_NANO_REVISION"     "Cosmos3-Nano (~50 GB)"
+snapshot_exists "$QWEN_IMAGE_EDIT_REPO"  "$QWEN_IMAGE_EDIT_REVISION"  && info "Qwen-Image-Edit cached."   || download_hf_model "$QWEN_IMAGE_EDIT_REPO"  "$QWEN_IMAGE_EDIT_REVISION"  "Qwen-Image-Edit (~57 GB)"
 snapshot_exists "$COSMOS_GUARDRAIL_REPO" "$COSMOS_GUARDRAIL_REVISION" && info "Cosmos-Guardrail1 cached." || download_hf_model "$COSMOS_GUARDRAIL_REPO" "$COSMOS_GUARDRAIL_REVISION" "Cosmos-Guardrail1"
-snapshot_exists "$QWEN_GUARD_REPO"       ""                           && info "Qwen3Guard cached."        || download_hf_model "$QWEN_GUARD_REPO"       ""                           "Qwen3Guard-Gen-0.6B"
-snapshot_exists "$WAN_VAE_REPO"          "$WAN_VAE_REVISION"          && info "Wan2.2-TI2V-5B cached."   || download_hf_model "$WAN_VAE_REPO"          "$WAN_VAE_REVISION"          "Wan2.2-TI2V-5B VAE (~15 GB)"
+snapshot_exists "$QWEN_GUARD_REPO"       ""                           && info "Qwen3Guard cached."         || download_hf_model "$QWEN_GUARD_REPO"       ""                           "Qwen3Guard-Gen-0.6B"
+snapshot_exists "$WAN_VAE_REPO"          "$WAN_VAE_REVISION"          && info "Wan2.2-TI2V-5B cached."    || download_hf_model "$WAN_VAE_REPO"          "$WAN_VAE_REVISION"          "Wan2.2-TI2V-5B VAE (~15 GB)"
 
 write_refs_main "$COSMOS3_NANO_REPO"     "$COSMOS3_NANO_REVISION"
 write_refs_main "$COSMOS_GUARDRAIL_REPO" "$COSMOS_GUARDRAIL_REVISION"
 write_refs_main "$QWEN_GUARD_REPO" \
     "$(ls "$HF_HOME/models--${QWEN_GUARD_REPO//\//'--'}/snapshots/" 2>/dev/null | head -1)"
 
-# ── 10. Docker login + pull containers ─────────────────────────────────────────
+# ── 11. Docker login + pull containers ────────────────────────────────────────
 info "Docker login to nvcr.io..."
 echo "$NGC_CLI_API_KEY" | docker login nvcr.io -u '$oauthtoken' --password-stdin
 
@@ -274,7 +245,7 @@ pull_image "$NIM_COSMOS_IMAGE"
 pull_image "$NIM_NEMOTRON_IMAGE"
 pull_image "$TAO_IMAGE"
 
-# ── 11. Lab 3: Cosmos3-Nano → Qwen3-VL safetensors conversion ─────────────────
+# ── 12. Lab 3: Cosmos3-Nano → Qwen3-VL safetensors conversion ─────────────────
 PTM_DIR="$LAB3_DIR/models/Cosmos3-Nano-VLM"
 if ls "$PTM_DIR"/*.safetensors 2>/dev/null | head -1 | grep -q .; then
     info "Lab 3 base checkpoint already converted — skipping."
@@ -314,10 +285,9 @@ python -m "$CONVERT_ENTRYPOINT" --checkpoint-path "$SRC" --vlm-model-name "$ARCH
     info "Checkpoint conversion complete → $PTM_DIR"
 fi
 
-# ── 12. socat bridge (Brev / root only) ────────────────────────────────────────
-if [[ $IS_ROOT == 1 ]]; then
-    info "socat bridge (systemd)..."
-    cat > /etc/systemd/system/docker-tcp-bridge.service << 'SVCEOF'
+# ── 13. socat bridge (Docker unix socket → tcp://localhost:2375) ───────────────
+info "socat bridge..."
+sudo tee /etc/systemd/system/docker-tcp-bridge.service > /dev/null << 'SVCEOF'
 [Unit]
 Description=socat bridge: Docker unix socket → tcp://localhost:2375
 After=docker.service
@@ -331,14 +301,12 @@ RestartSec=3
 [Install]
 WantedBy=multi-user.target
 SVCEOF
-    systemctl daemon-reload
-    systemctl enable --now docker-tcp-bridge
-fi
+sudo systemctl daemon-reload
+sudo systemctl enable --now docker-tcp-bridge
 
-# ── 14. Environment ────────────────────────────────────────────────────────────
-if [[ $IS_ROOT == 1 ]]; then
-    info "Writing /etc/environment..."
-    printf '%s\n' "
+# ── 14. Environment variables ──────────────────────────────────────────────────
+info "Writing /etc/environment..."
+printf '%s\n' "
 VSS_LABS_DIR=$BASE_DIR
 LAB_DATA_DIR=$DATA_DIR
 HF_HOME=$HF_HOME
@@ -382,29 +350,11 @@ DLI_GPU=1
 LAB_GPUS=0,1
 DOCKER_HOST=tcp://localhost:2375
 HF_HUB_OFFLINE=0
-TRANSFORMERS_OFFLINE=0" >> /etc/environment
-else
-    # Standalone: write .env for docker compose and env.sh to source
-    REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    info "Writing $REPO_DIR/.env ..."
-    cat > "$REPO_DIR/.env" << EOF
-# Generated by setup.sh — do not commit.
-NGC_CLI_API_KEY=$NGC_CLI_API_KEY
-HF_TOKEN=$HF_TOKEN
-VSS_LABS_DIR=$BASE_DIR
-UV_PYTHON_PARENT=$UV_PYTHON_PARENT
-JUPYTER_TOKEN=
-NGINX_PORT=80
-LAB_GPUS=0,1
-VSS_VERSION=3.2.1
-VSS_PROFILE=alerts
-HARDWARE_PROFILE=H100
-NIM_MODEL_SIZE=nano
-EOF
+TRANSFORMERS_OFFLINE=0" | sudo tee -a /etc/environment > /dev/null
 
-    info "Writing $BASE_DIR/env.sh ..."
-    cat > "$BASE_DIR/env.sh" << EOF
-# Source before running notebooks without docker compose:
+info "Writing $BASE_DIR/env.sh ..."
+cat > "$BASE_DIR/env.sh" << EOF
+# Source before running notebooks outside of Brev:
 #   source $BASE_DIR/env.sh
 export NGC_CLI_API_KEY=$NGC_CLI_API_KEY
 export HF_TOKEN=$HF_TOKEN
@@ -437,7 +387,7 @@ export NEMOTRON_NIM_CONTAINER=nemotron-nim
 export NEMOTRON_NIM_CACHE=$DATA_DIR/nemotron-nim-cache
 export NEMOTRON_NIM_PORT=30083
 export NEMOTRON_NIM_BASE_URL=http://localhost:30083
-export DOCKER_HOST=unix:///var/run/docker.sock
+export DOCKER_HOST=tcp://localhost:2375
 export DLI_BASE=$LAB3_DIR
 export DLI_PTM=$LAB3_DIR/models/Cosmos3-Nano-VLM
 export DLI_CACHE=$LAB3_DIR/cache
@@ -447,17 +397,10 @@ export DLI_IMAGE=$TAO_IMAGE
 export DLI_SKILL_BANK=$TAO_SKILL_BANK_DIR
 export DLI_SKILL_BANK_REF=$TAO_SKILL_BANK_TAG
 EOF
-    [[ -n "$UV_PYTHON_PARENT" ]] && printf 'export UV_PYTHON_PARENT=%s\n' "$UV_PYTHON_PARENT" >> "$BASE_DIR/env.sh"
-fi
+[[ -n "$UV_PYTHON_PARENT" ]] && printf 'export UV_PYTHON_PARENT=%s\n' "$UV_PYTHON_PARENT" >> "$BASE_DIR/env.sh"
 
 # ── Done ───────────────────────────────────────────────────────────────────────
 info "Done! All assets ready under $BASE_DIR"
-if [[ $IS_ROOT == 0 ]]; then
-    echo ""
-    echo "  Next steps:"
-    echo "    Option A (Docker Compose):  docker compose up -d  → http://localhost"
-    echo "    Option B (bare JupyterLab): source $BASE_DIR/env.sh && jupyter lab"
-    echo ""
-    echo "  Run notebooks in order:"
-    echo "    lab-1-vlm/lab_1.ipynb  →  lab-2-sdg/lab_2.ipynb  →  lab-3-vlm-pt/lab_3.ipynb"
-fi
+echo ""
+echo "  Run notebooks in order:"
+echo "    lab-1-vlm/lab_1.ipynb  →  lab-2-sdg/lab_2.ipynb  →  lab-3-vlm-pt/lab_3.ipynb"
