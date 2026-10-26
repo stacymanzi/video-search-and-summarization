@@ -103,6 +103,7 @@ curl -LsSf https://astral.sh/uv/0.11.29/install.sh | sh
 export PATH="$HOME/.local/bin:$PATH"
 UV="$HOME/.local/bin/uv"
 "$UV" python install 3.12
+PYTHON="$("$UV" python find 3.12)"
 
 # Make uv visible in system PATH so cosmos-framework subprocesses find it
 ln -sf "$HOME/.local/bin/uv" /usr/local/bin/uv 2>/dev/null || \
@@ -183,13 +184,13 @@ fi
 
 # ── 9. HuggingFace model downloads ─────────────────────────────────────────────
 info "HuggingFace login..."
-HF_HOME="$HF_HOME" "$UV" run --no-project --python 3.12 python -c "
+HF_HOME="$HF_HOME" "$PYTHON" -c "
 from huggingface_hub import login
 import os
 login(token=os.environ['HF_TOKEN'], add_to_git_credential=False)
 " 2>/dev/null || \
-"$UV" pip install -q huggingface-hub --python 3.12 && \
-HF_HOME="$HF_HOME" "$UV" run --no-project --python 3.12 python -c "
+"$UV" pip install -q --python "$PYTHON" huggingface-hub && \
+HF_HOME="$HF_HOME" "$PYTHON" -c "
 from huggingface_hub import login
 import os
 login(token=os.environ['HF_TOKEN'], add_to_git_credential=False)
@@ -207,7 +208,7 @@ snapshot_exists() {
 download_hf_model() {
     local repo="$1" revision="$2" label="$3"
     info "Downloading $label ($repo @ ${revision:0:8}...)..."
-    HF_HOME="$HF_HOME" "$UV" run --no-project --python 3.12 python -c "
+    HF_HOME="$HF_HOME" "$PYTHON" -c "
 from huggingface_hub import snapshot_download
 import os
 snapshot_download(
