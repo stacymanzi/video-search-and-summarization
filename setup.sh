@@ -120,7 +120,19 @@ _sysctl net.core.somaxconn=65535
 grep -q vm.max_map_count /etc/sysctl.conf 2>/dev/null || echo "vm.max_map_count=262144" | sudo tee -a /etc/sysctl.conf >/dev/null
 grep -q net.core.somaxconn /etc/sysctl.conf 2>/dev/null || echo "net.core.somaxconn=65535" | sudo tee -a /etc/sysctl.conf >/dev/null
 
-# ── 5. Directories ────────────────────────────────────────────────────────────
+# ── 5. Python packages (Brev venv — root only) ────────────────────────────────
+if [[ $IS_ROOT == 1 ]]; then
+    info "Python packages (Brev venv)..."
+    PKGS="openai diffusers>=0.33.0 transformers accelerate ipywidgets tomli-w \
+          requests-unixsocket2 huggingface-hub>=0.23 hf-xet torch torchvision matplotlib pillow"
+    if [[ -d "$BREV_VENV" ]]; then
+        sudo -u ubuntu "$UV" pip install -q --python "$BREV_VENV/bin/python3" $PKGS
+    else
+        "$UV" pip install -q --system $PKGS
+    fi
+fi
+
+# ── 6. Directories ────────────────────────────────────────────────────────────
 info "Directories..."
 mkdir -p \
     "$HF_HOME" \
@@ -302,19 +314,7 @@ python -m "$CONVERT_ENTRYPOINT" --checkpoint-path "$SRC" --vlm-model-name "$ARCH
     info "Checkpoint conversion complete → $PTM_DIR"
 fi
 
-# ── 12. Python packages (Brev venv — root only) ────────────────────────────────
-if [[ $IS_ROOT == 1 ]]; then
-    info "Python packages (Brev venv)..."
-    PKGS="openai diffusers>=0.33.0 transformers accelerate ipywidgets tomli-w \
-          requests-unixsocket2 huggingface-hub>=0.23 hf-xet torch torchvision matplotlib pillow"
-    if [[ -d "$BREV_VENV" ]]; then
-        sudo -u ubuntu "$UV" pip install -q --python "$BREV_VENV/bin/python3" $PKGS
-    else
-        "$UV" pip install -q --system $PKGS
-    fi
-fi
-
-# ── 13. socat bridge (Brev / root only) ────────────────────────────────────────
+# ── 12. socat bridge (Brev / root only) ────────────────────────────────────────
 if [[ $IS_ROOT == 1 ]]; then
     info "socat bridge (systemd)..."
     cat > /etc/systemd/system/docker-tcp-bridge.service << 'SVCEOF'
