@@ -306,7 +306,7 @@ fi
 if [[ $IS_ROOT == 1 ]]; then
     info "Python packages (Brev venv)..."
     PKGS="openai diffusers>=0.33.0 transformers accelerate ipywidgets tomli-w \
-          requests-unixsocket2 huggingface-hub>=0.23 hf-xet torchvision matplotlib pillow"
+          requests-unixsocket2 huggingface-hub>=0.23 hf-xet torch torchvision matplotlib pillow"
     if [[ -d "$BREV_VENV" ]]; then
         sudo -u ubuntu "$UV" pip install -q --python "$BREV_VENV/bin/python3" $PKGS
     else
