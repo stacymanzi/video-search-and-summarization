@@ -180,8 +180,19 @@ login(token=os.environ['HF_TOKEN'], add_to_git_credential=False)
 }
 
 snapshot_exists() {
-    local repo="$1" rev="$2" name model_dir
+    local repo="$1" rev="$2" name model_dir snap_dir resolved_rev
     name="${repo//\//'--'}"
+    # If no revision specified, resolve from refs/main (check both cache layouts)
+    if [[ -z "$rev" ]]; then
+        for base in "$HF_HOME/hub/models--$name" "$HF_HOME/models--$name"; do
+            if [[ -f "$base/refs/main" ]]; then
+                resolved_rev="$(cat "$base/refs/main")"
+                snap_dir="$base/snapshots/$resolved_rev"
+                [[ -d "$snap_dir" ]] && [[ "$(ls -A "$snap_dir" 2>/dev/null)" ]] && return 0
+            fi
+        done
+        return 1
+    fi
     model_dir="$HF_HOME/hub/models--$name/snapshots/$rev"
     [[ -d "$model_dir" ]] && [[ "$(ls -A "$model_dir" 2>/dev/null)" ]] && return 0
     model_dir="$HF_HOME/models--$name/snapshots/$rev"
