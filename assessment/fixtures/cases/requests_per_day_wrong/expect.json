@@ -1,0 +1,8 @@
+{
+  "passed": true,
+  "fails": [
+    "part1.throughput_estimate"
+  ],
+  "services": "up",
+  "note": "86,400 is the seconds in a day, not the requests"
+}

@@ -1,0 +1,13 @@
+{
+  "passed": false,
+  "fails": [
+    "part1.appearance_match",
+    "part1.captions_indexed",
+    "part1.detections_indexed",
+    "part1.kafka_decoded",
+    "part1.search_matches_reference",
+    "part1.video_in_vios"
+  ],
+  "services": "down",
+  "note": "every live check fails closed; the T5 overlap, T7 and the questions need no service"
+}

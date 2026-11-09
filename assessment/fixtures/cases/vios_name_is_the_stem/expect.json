@@ -1,0 +1,8 @@
+{
+  "passed": false,
+  "fails": [
+    "part1.video_in_vios"
+  ],
+  "services": "up",
+  "note": "the file stem instead of the name VIOS shows"
+}

@@ -1,0 +1,51 @@
+{
+  "clip_stem": "rain_check",
+  "t1": {
+    "vios_sensor_id": "5b0f3c9e-1d2a-4e8b-9c7f-0a1b2c3d4e5f",
+    "vios_name": "rain_check_1"
+  },
+  "t2": {
+    "frames": 12,
+    "top_type": "car"
+  },
+  "t3": {
+    "sensor_id": "rain_check",
+    "frame_id": "4",
+    "timestamp": "2025-01-01T00:00:01.000000000Z"
+  },
+  "t4": {
+    "file_id": "3f2a6c1e-8b4d-4f1a-9e2b-7c5d4a3b2e1f",
+    "chunks_10": 3,
+    "chunks_0": 1,
+    "frame_counts_8": [
+      8,
+      8,
+      8
+    ]
+  },
+  "t5": {
+    "query": "two cars collide at a crossing",
+    "file": "rain_eval.mp4",
+    "start_s": 20.0,
+    "end_s": 25.0
+  },
+  "t6": {
+    "query_object_id": "9",
+    "answer_object_id": "9"
+  },
+  "t7": {
+    "latency_ms": 4200.0,
+    "requests_per_day": 8640,
+    "busy_seconds_per_day": 36288.0
+  },
+  "questions": {
+    "p1-q1": "C",
+    "p1-q2": "A",
+    "p1-q3": "D",
+    "p1-q4": "B",
+    "p1-q5": "A",
+    "p1-q6": "C",
+    "p1-q7": "D",
+    "p1-q8": "B"
+  }
+}

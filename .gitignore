@@ -1,0 +1,25 @@
+# (1) Use this file to ignore anything you don't want stored in git.
+# Unless a large file extension is configured, you should ignore any
+# large data files.
+
+**/data
+**/models
+**/results
+**/.ipynb_checkpoints
+**/dask-worker-space
+*.pt
+__pycache__
+*.tgz
+*.tar
+devonly*
+*.zip
+task/workspaces
+**/.Trash*
+.env-dev
+# skill-author dev-testing scratch (live-test evidence, local docker-save backups)
+**/skill_walkthrough
+
+# Learner output created on a devbox (never commit): notebook work, the Part 1
+# assessment's answers and clip, the coding agent's files (work/agent/).
+lab/task/work/
+.pytest_cache/

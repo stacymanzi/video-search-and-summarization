@@ -1,0 +1,185 @@
+# The lab image: JupyterLab + learner content + the public rubric. Used by the
+# `lab` and `course-prep` services. The assessment image is built by
+# task1/Dockerfile.assessment, which carries a verbatim copy of this file
+# followed by one more stage (the grader, answer keys, runner, entrypoint).
+#
+# Why two files and not one file with two `target`s (the V1 house pattern,
+# BUILD.md D9): Pebble's builder ignores compose `build.target` and builds the
+# LAST stage of whatever Dockerfile a service names. The first production launch
+# (tag v0.0.3, 2026-10-22) proved it: the assessment service received this lab
+# image, /dli/entrypoint.assessment.sh did not exist, the container could not be
+# created, compose aborted `up -d`, nginx never started and Pebble reported
+# "unable to start your GPU task". With one file per image the default stage is
+# always the intended one. tests/check_dockerfiles.py fails CI if the two files
+# drift (run it with --fix after editing this one).
+#
+# The BUILD CONTEXT IS task1/, not task1/lab/: the compose files build with
+# `context: .` and `dockerfile: lab/Dockerfile`, so every COPY below is
+# relative to task1/ and task1/.dockerignore governs what is sent. Building
+# with `docker build task1/lab` fails on the first COPY; that is intended.
+#
+# GPU-capable base, matching the current lab-template. The lab itself runs no
+# model in course 1 (every call goes to the deployed stack over http://nginx),
+# but learner kernels decode frames and draw boxes with the base image's CUDA
+# stack, and the image must stay runnable under `runtime: nvidia`.
+FROM nvcr.io/nvidia/pytorch:25.11-py3 AS lab
+
+# Set environment variables to prevent interactive prompts during package installation
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONUNBUFFERED=1 \
+    LANG=C.UTF-8 \
+    PIP_ROOT_USER_ACTION=ignore
+
+# Install system dependencies and build tools.
+# ffmpeg: notebooks decode frames (labtools), and the Part 1 assessment and the
+# coding agent cut clips with it. git: the safe.directory setting below needs
+# it; no course file needs a git repository any more.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    curl \
+    git \
+    iproute2 \
+    tree \
+    ffmpeg \
+    poppler-utils \
+    tesseract-ocr \
+    unzip \
+    python3.12-dev \
+    && apt-get clean -y \
+    && rm -rf /var/lib/apt/lists/*
+
+ARG DOCKER_VERSION=5:29.4.3-1~ubuntu.24.04~noble
+
+# --- Docker CLI for the notebooks ---------------------------------------------
+# The readiness checks in the onboarding notebook (section 0.3) and notebook 1
+# (section 1.2) run docker inspect, notebook 1 also runs docker exec (section
+# 1.3) and docker ps (section 1.6), and notebook 2 (section 2.6) and the Part 1
+# assessment (T3) read Kafka with `docker exec kafka ...`. The CLI version must
+# match dind/Dockerfile's DOCKER_VERSION. `docker --version` reports the
+# CLIENT, and upstream's preflight reads it to decide whether the platform is
+# supported, so an unpinned CLI here made a coding agent report 29.7.2 and
+# refuse to deploy, even though the daemon it talks to was a compliant 29.4.3.
+# Keep these two pins in step.
+# Docker CLI only (no daemon). Commands go to the course's own daemon via
+# DOCKER_HOST=tcp://dind:2375, set in docker-compose.yml. buildx is required,
+# not optional: several upstream Dockerfiles use COPY --chmod, which the
+# classic builder cannot do.
+RUN install -m 0755 -d /etc/apt/keyrings \
+    && curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
+        -o /etc/apt/keyrings/docker.asc \
+    && chmod a+r /etc/apt/keyrings/docker.asc \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] \
+       https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo $VERSION_CODENAME) stable" \
+        > /etc/apt/sources.list.d/docker.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends \
+        docker-ce-cli="${DOCKER_VERSION}" docker-compose-plugin docker-buildx-plugin \
+    && apt-mark hold docker-ce-cli \
+    && rm -rf /var/lib/apt/lists/*
+
+# NGC CLI, kept for instructors who inspect model versions from the terminal.
+# No credential is baked in; the course never pulls from NGC inside the lab.
+ARG NGC_CLI_VERSION=4.13.0
+RUN curl -fsSL -o /tmp/ngccli.zip \
+      "https://api.ngc.nvidia.com/v2/resources/nvidia/ngc-apps/ngc_cli/versions/${NGC_CLI_VERSION}/files/ngccli_linux.zip" \
+    && unzip -q /tmp/ngccli.zip -d /opt \
+    && chmod +x /opt/ngc-cli/ngc \
+    && ln -s /opt/ngc-cli/ngc /usr/local/bin/ngc \
+    && rm -f /tmp/ngccli.zip
+
+# Node + the Codex CLI, the coding agent of VSS Coding Agent Skills (a Course
+# Docs page) at the end of Part 1 (BUILD.md D8). Learners sign in with their OWN
+# credentials (`codex login --device-auth`, in a terminal) during onboarding;
+# nothing is stored in the image. VERIFY ON DEVBOX: pin @openai/codex to the
+# version the November access path (Kevin Lee's call) is tested with; unpinned,
+# two builds a week apart can ship different CLIs and rollout-log formats.
+ARG NODE_MAJOR=22
+RUN curl -fsSL https://deb.nodesource.com/setup_${NODE_MAJOR}.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
+    && npm install -g @openai/codex \
+    && npm cache clean --force \
+    && rm -rf /var/lib/apt/lists/*
+
+# Upgrade pip to the latest version
+RUN pip install --no-cache-dir --upgrade pip --root-user-action=ignore
+
+# openai: notebook 3 (RT-VLM) sends its chat/completions requests to
+# http://nginx/rtvi-vlm/v1 with the OpenAI client. Pillow: the frames and boxes
+# labtools draws in the notebooks. PyYAML: no course file imports it any more;
+# it stays pinned here rather than inherited from the base image, for scripts
+# written in the lab. requests ships with the base image; the grader is
+# standard library only.
+RUN pip install --no-cache-dir \
+    openai==1.100.2 \
+    Pillow \
+    PyYAML==6.0.2 \
+    --root-user-action=ignore
+
+# Install and set up Jupyter; pin to new version as needed
+#
+# jupyter-server-proxy serves the built course documentation inside the
+# JupyterLab UI. It MUST be installed before the `labextension lock` below, so
+# its prebuilt Launcher extension is present when the lock is applied.
+#
+# Why a proxy rather than opening the .html from the file browser: Jupyter
+# serves /files/ with `Content-Security-Policy: ... sandbox allow-scripts`,
+# which gives the page an opaque origin. The Sphinx theme's first inline script
+# reads localStorage to set data-theme on <html>; under an opaque origin that
+# throws, the attribute is never set, and the stylesheet never applies, so the
+# site renders unstyled. A proxied route is same-origin with JupyterLab and
+# carries no CSP, so it renders correctly. See lab/configs/jupyter_configs/
+# jupyter_server_config.py.
+RUN pip install --no-cache-dir \
+    JupyterLab==4.3.2 jupyter-server-proxy==4.5.0 --root-user-action=ignore
+
+# Disable the announcements plugin in JupyterLab and lock the change
+RUN jupyter labextension disable "@jupyterlab/apputils-extension:announcements" \
+    && jupyter labextension lock
+ENV SHELL=/bin/bash
+
+# Jupyter config and the saved workspace (opens 00_Home.ipynb).
+# Use './scripts/save_workspace.sh' to update.
+RUN rm -rf /root/.jupyter
+COPY lab/configs/jupyter_configs/ /root/.jupyter/
+
+# --- Learner content ---------------------------------------------------------
+# Git must accept repositories owned by another uid, so it works in any tree a
+# learner or the coding agent opens: on a devbox /dli/task is a bind mount owned
+# by the host user while every container here runs as root.
+RUN git config --system --add safe.directory '*'
+
+WORKDIR /dli/task
+COPY lab/task .
+
+# Launch-time preparation, run by the course-prep service (CONTRACTS.md section
+# 6; BUILD.md 5a decision 6). It lives OUTSIDE /dli/task on purpose: /dli/task
+# is a bind mount in development and the `task` named volume in production, and
+# either hides a script kept under it, which used to cost an override-only bind
+# mount. At /dli/prep it is image content in every configuration, and no
+# compose file mounts anything under /dli from the launch tarball.
+COPY lab/prep /dli/prep
+
+COPY lab/stage-course-videos.sh /usr/local/bin/stage-course-videos
+RUN chmod 0755 /usr/local/bin/stage-course-videos
+
+# The public rubric: pass rule, thresholds and check texts of the Part 1
+# assessment, and no answers (CONTRACTS.md section 5: "thresholds live nowhere
+# else"). Only this one file of the grader enters the learner image; the
+# multiple-choice key (grader/answer_keys/part1.json) stays in the assessment
+# image.
+COPY assessment/grader/rubric.json /dli/assessment/grader/rubric.json
+
+# course_setup and the other part1 helpers resolve from any working directory
+# (a terminal, a script the coding agent writes, /dli/prep/prepare_course.py).
+# /dli/prep lets the instructor-only cell at the end of notebook 4
+# `import prepare_course` and call prepare_search_collection() on a devbox
+# without the course-prep service.
+ENV PYTHONPATH=/dli/task/part1:/dli/prep
+
+# Jupyter listens on 8888.
+EXPOSE 8888
+
+# Please see `entrypoint.sh` for details
+COPY lab/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+ENTRYPOINT [ "/usr/local/bin/entrypoint.sh"]

@@ -1,0 +1,6 @@
+{
+  "passed": true,
+  "fails": [],
+  "services": "up",
+  "note": "from frame 0, track 7's nearest other frame is frame 1; normal_eval's twin of track 7 must stay out of the search"
+}

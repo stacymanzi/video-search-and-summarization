@@ -1,0 +1,21 @@
+# NOTE: the compose files build the lab image with the context one level UP
+# (task1/, see docker-compose.override.yml), and Docker reads only the
+# .dockerignore at the context root, so task1/.dockerignore is the governing
+# file. This one applies only to a direct `docker build task1/lab`, which the
+# Dockerfile's COPY of ../assessment makes fail anyway. Kept in step with the
+# governing file so no future context change ships notes, tests or caches.
+notes
+**/tests
+**/.git
+**/data
+**/models
+**/results
+**/.ipynb_checkpoints
+**/__pycache__
+**/.pytest_cache
+**/.Trash*
+**/*.zip
+**/*.tgz
+**/*.tar.gz
+**/*.tar
+**/devonly*

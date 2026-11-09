@@ -1,0 +1,106 @@
+[
+  {
+    "file": "normal_eval.mp4",
+    "duration_s": 180.166667,
+    "events": [
+      {
+        "type": "collision",
+        "start_s": 17.38,
+        "end_s": 50.09
+      },
+      {
+        "type": "collision",
+        "start_s": 80.25,
+        "end_s": 104.79
+      },
+      {
+        "type": "stalled",
+        "start_s": 122.08,
+        "end_s": 146.5
+      },
+      {
+        "type": "stalled",
+        "start_s": 151.04,
+        "end_s": 175.46
+      }
+    ]
+  },
+  {
+    "file": "rain_eval.mp4",
+    "duration_s": 180.25,
+    "events": [
+      {
+        "type": "collision",
+        "start_s": 19.21,
+        "end_s": 43.75
+      },
+      {
+        "type": "collision",
+        "start_s": 76.58,
+        "end_s": 101.12
+      },
+      {
+        "type": "stalled",
+        "start_s": 120.25,
+        "end_s": 144.67
+      },
+      {
+        "type": "stalled",
+        "start_s": 150.12,
+        "end_s": 174.54
+      }
+    ]
+  },
+  {
+    "file": "fog_eval.mp4",
+    "duration_s": 180.25,
+    "events": [
+      {
+        "type": "collision",
+        "start_s": 19.21,
+        "end_s": 43.75
+      },
+      {
+        "type": "collision",
+        "start_s": 76.58,
+        "end_s": 101.12
+      },
+      {
+        "type": "stalled",
+        "start_s": 120.25,
+        "end_s": 144.67
+      },
+      {
+        "type": "stalled",
+        "start_s": 150.12,
+        "end_s": 174.54
+      }
+    ]
+  },
+  {
+    "file": "night_eval.mp4",
+    "duration_s": 180.25,
+    "events": [
+      {
+        "type": "collision",
+        "start_s": 19.21,
+        "end_s": 43.75
+      },
+      {
+        "type": "collision",
+        "start_s": 76.58,
+        "end_s": 101.12
+      },
+      {
+        "type": "stalled",
+        "start_s": 120.25,
+        "end_s": 144.67
+      },
+      {
+        "type": "stalled",
+        "start_s": 150.12,
+        "end_s": 174.54
+      }
+    ]
+  }
+]

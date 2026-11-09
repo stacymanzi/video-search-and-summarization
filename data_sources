@@ -1,0 +1,115 @@
+# Use this file to list any data files you want to download
+# from S3. See github.com/NVDLI/s3_data_loader for more advanced
+# options.
+#
+# Downloads land in the `course_data` volume, mounted at /dli/task/data in the
+# lab, dind, course-prep and assessment containers (same absolute path
+# everywhere, so a `docker run -v` source a notebook hands to the inner daemon
+# resolves). VSS itself reads videos from its disposable data-dir inside dind;
+# the course keeps the S3 copy here and ingests from it over the API of the
+# VSS agent service.
+#
+# Add course files HERE. Do not place them into the volume by hand: a
+# hand-placed file is lost the moment the volume is recreated.
+#
+# EVERY LINE IS A LAUNCH PRECONDITION. The loader is one sequential process.
+# A key that does not exist, or a --recursive prefix with no objects
+# (list_objects returns no 'Contents' key and the loader raises KeyError),
+# stops it with a non-zero exit, and load-course-data.py writes FAILED with the
+# error to /dli/task/data/.course-data-status.json. Compose no longer gates on
+# the loader, so `up -d` and JupyterLab are unaffected, but vss-deploy and
+# course-prep wait on that marker: they exit 1 with "S3 course data loader
+# failed: ...", the VSS stack never comes up, and the onboarding notebook
+# (sections 0.3 and 0.4) reports FAILED.
+# Upload first, verify with `aws s3 ls s3://dli-lms/data/<prefix>/`, then list.
+#
+# HOW KEYS MAP TO /dli/task/data (loader behaviour verified on the devbox,
+# Sep 3 and Sep 8 2026, by reading /dli/app/loader.py out of the image):
+#   --recursive s3://dli-lms/data/<prefix>/   strips <prefix>/ and writes the
+#                                             remainder of each key under /data,
+#                                             folders preserved.
+#   s3://dli-lms/data/<prefix>/a/b.mp4        the stock loader writes /data/b.mp4
+#                                             (basename only). load-course-data.py
+#                                             wraps the loader so that explicit
+#                                             keys under the course prefix keep
+#                                             their folder: /data/a/b.mp4. The
+#                                             recursive course line then skips
+#                                             them ("already exists locally").
+# Do NOT add per-folder --recursive lines (s3://.../search-videos/): a recursive
+# line strips what it lists, so that form flattens the folder into /data.
+#
+# ORDER MATTERS. The loader downloads sequentially in FILE order, and within a
+# --recursive line in S3 list order (byte order). Small, needed-early items go
+# at the TOP: the five clips below are what notebook 2 opens first
+# (traffic_short.mp4) and what course-prep ingests for notebook 4 (the four
+# search clips); the model caches (~80 GB) go last.
+#
+# THE LOADER LISTS AT MOST 1000 KEYS PER --recursive LINE. nvdli/s3_data_loader
+# makes a single unpaginated list_objects call (its loader.py says so: "This
+# returns a max of 1000 keys"). Everything that sorts after key #1000 under a
+# prefix is silently never copied. Keep every recursive prefix under 1000 keys;
+# anything that must land regardless of sort order gets its own line on its own
+# sub-prefix. The prefixes below are: media + ground truth (tens of keys), the
+# built docs site (88 keys, published 2026-11-05), the pinned
+# model caches (83 keys, each verified against deploy/*-checkpoint.json by
+# load-course-data.py).
+#
+# Course media. Filenames are the CONTRACTS.md section 7 names. The four
+# search clips must match lab/task/search-videos.json (course-prep's manifest).
+# The Part 1 assessment cuts its own clip from rain_eval.mp4. In VSS Coding
+# Agent Skills the coding agent uploads its own copies of the four clips and
+# loops normal_eval.mp4 through NVStreamer as a live stream.
+s3://dli-lms/data/c-fx-17-v2/traffic_short.mp4
+s3://dli-lms/data/c-fx-17-v2/search-videos/normal_eval.mp4
+s3://dli-lms/data/c-fx-17-v2/search-videos/rain_eval.mp4
+s3://dli-lms/data/c-fx-17-v2/search-videos/fog_eval.mp4
+s3://dli-lms/data/c-fx-17-v2/search-videos/night_eval.mp4
+
+# Course documentation (the built Sphinx site, served in the JupyterLab UI by
+# jupyter-server-proxy, see lab/configs/jupyter_configs/jupyter_server_config.py).
+# Its own prefix, so it neither consumes the course listing's 1000-key budget
+# nor perturbs byte order within it. The loader strips the listed prefix, so
+#   c-fx-17-v2-docs/course-docs/...  ->  /dli/task/data/course-docs/...
+# which is the DOCS_ROOT the Jupyter config serves. Build and trim as
+# docs/course/README.md steps 1 and 2 say (never upload .doctrees/), then publish with:
+#   aws s3 cp --recursive --acl public-read docs/_build/html/ \
+#     s3://dli-lms/data/c-fx-17-v2-docs/course-docs/
+# and verify the listing is non-empty before a launch (see the precondition
+# note at the top of this file).
+#
+# THE PART 1 LAUNCH NEEDS THE SITE TOO (2026-11-04). The site source is docs/
+# (build and publish: docs/course/README.md). VSS Coding Agent Skills, the last
+# step of Part 1, is a page of this site (docs/course/vss-coding-agent-skills.md),
+# and the lab context file the coding agent reads is in it too
+# (docs/_static/vss-lab-context.txt, which lands at
+# /dli/task/data/course-docs/_static/vss-lab-context.txt). Without this line
+# the Course Docs tile serves an empty directory, and that step cannot run.
+# The prefix also holds the Part 2 pages (the Part 2 launch loads it from
+# task2/data_sources), so the Part 1 launch shows them as well.
+# ENABLED 2026-11-05: the site built from commit 2ccbb15 is uploaded, and
+# `aws s3 ls --recursive s3://dli-lms/data/c-fx-17-v2-docs/ | wc -l` printed 88.
+# Never empty this prefix while the line is active: an empty --recursive
+# prefix stops the loader and therefore the whole launch.
+--recursive s3://dli-lms/data/c-fx-17-v2-docs/
+
+# The rest of the course prefix: ground_truth/ (search_videos.json, the
+# labelled events that the Part 1 assessment checks against) and anything
+# added later. The five clips above already exist
+# locally by now and are skipped.
+# load-course-data.py also skips a legacy rt-vlm-cache/ folder if one was copied
+# across from the Berlin prefix.
+# This line also downloads whatever else still sits under the prefix: the
+# retired warehouse clips (warehouse/) and ground_truth/warehouse.json land on
+# every VM until someone removes them from S3. Nothing in the course reads them.
+--recursive s3://dli-lms/data/c-fx-17-v2/
+
+# Pinned model caches. Only the manifest-pinned rt-vlm/, nemotron/, rt-embed/
+# and rt-cv/ versioned files are downloaded; load-course-data.py raises if any
+# pinned file is missing from the listing. /data/models is the vss_models
+# volume, so no extraction or second copy is needed; vss-deploy verifies sizes
+# and checksums before selecting a directory.
+--recursive s3://dli-lms/data/c-fx-17-v2-models/
+
+# Keep this trailing blank line: the loader has been observed to ignore the last
+# line of the file when it is not newline-terminated.
+

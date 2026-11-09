@@ -1,0 +1,8 @@
+{
+  "passed": false,
+  "fails": [
+    "part1.detections_indexed"
+  ],
+  "services": "up",
+  "note": "person is not the most frequent type"
+}

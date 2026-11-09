@@ -1,0 +1,145 @@
+{
+  "_comment": "The learner's path through the Part 1 launch (task1), in one place. task1/scripts/course_path.py projects it into the notebooks (the strip under each title, the card after each '## Next' cell, the map on 00_Home.ipynb, the milestone tag); course_ui.py reads it at run time for the course bar and the Home card. Minutes follow the 2026-11-02 plan with two changes of 2026-11-04: VSS Coding Agent Skills takes 40 minutes (it was 25), so Part 1 is 195 with a 10-minute break, and lunch takes 45 minutes (it was 60), so no Part 2 time moves. Introduction 30, lunch 45, Part 2 210 on its own launch (task2), 480 in all. Paths are relative to /dli/task. 'kind' is notebook, terminal, assessment, slides, break or lunch; only the first three count as steps. 'block' is the part of the day. 'summary' is the one line the map, the bar and the previous step's card show; 'needs_before' and 'done_when' are shown in the notebook; 'grades' is the sentence the card two steps before an assessment shows. 'course_docs' marks a step whose instructions are a Course Docs page, not a notebook: the page's source under docs/, whose H1 is the step's title. Such a step has no path and no milestone cell, and the generated cells tell learners to open Course Docs from the JupyterLab Launcher. Progress: a counted step is done once its milestone cell has run without an error in the saved notebook, or once a file matching one of its 'evidence' globs (relative to /dli/task) exists, and every counted step before it is done with it; an assessment is done only when its grader marker /dli/assessment_results/<id>.json says passed.",
+  "version": "2026-11-04",
+  "steps": [
+    {
+      "id": "intro",
+      "kind": "slides",
+      "block": "Introduction",
+      "minutes": 15,
+      "title": "VSS presentation (slides)",
+      "summary": "The instructor introduces VSS and the building blocks you use today."
+    },
+    {
+      "id": "onboarding",
+      "kind": "notebook",
+      "block": "Introduction",
+      "minutes": 15,
+      "title": "0. Course Onboarding",
+      "path": "part1/00-onboarding.ipynb",
+      "summary": "Get to know JupyterLab, check that the lab is ready, and sign in to the coding agent.",
+      "done_when": [
+        "the readiness check in 0.3 prints `READY TO CONTINUE`"
+      ],
+      "milestone_cell_id": "o0-gate"
+    },
+    {
+      "id": "nb1",
+      "kind": "notebook",
+      "block": "Part 1",
+      "minutes": 15,
+      "title": "1. Inspect VSS Deployment",
+      "path": "part1/01-inspect-vss-deployment.ipynb",
+      "summary": "See which services and models run here, check that they answer, and read the detector's labels.",
+      "done_when": [
+        "the cell in 1.3 that reads the detector's labels prints the label list"
+      ],
+      "milestone_cell_id": "716b9cc4"
+    },
+    {
+      "id": "nb2",
+      "kind": "notebook",
+      "block": "Part 1",
+      "minutes": 40,
+      "title": "2. RT-CV: Detection & Tracking",
+      "path": "part1/02-rt-cv-detection-and-tracking.ipynb",
+      "summary": "Add a video to VIOS, read RT-CV's detections from Kafka and Elasticsearch, and find the vehicles that stand still.",
+      "done_when": [
+        "the check cell of the exercise in 2.11 prints how many cars pass your rule"
+      ],
+      "milestone_cell_id": "03-ex3-check"
+    },
+    {
+      "id": "break",
+      "kind": "break",
+      "block": "Part 1",
+      "minutes": 10,
+      "title": "Break"
+    },
+    {
+      "id": "nb3",
+      "kind": "notebook",
+      "block": "Part 1",
+      "minutes": 35,
+      "title": "3. RT-VLM: Captioning & Prompting",
+      "path": "part1/03-rt-vlm-captioning-and-prompting.ipynb",
+      "summary": "Caption the clip with RT-VLM and see how the chunk size, the sampled frames and the prompt change the answer.",
+      "needs_before": [
+        "`traffic_short` added to VIOS in notebook 2"
+      ],
+      "done_when": [
+        "the check cell of the exercise in 3.6 prints `PASS`"
+      ],
+      "milestone_cell_id": "04b-exercise-check"
+    },
+    {
+      "id": "nb4",
+      "kind": "notebook",
+      "block": "Part 1",
+      "minutes": 30,
+      "title": "4. RT-Embed: Video Search",
+      "path": "part1/04-rt-embed-video-search.ipynb",
+      "summary": "Search four traffic videos, write queries like captions, score the search against labels, and search one file at a time.",
+      "needs_before": [
+        "the lab pill is green, which means the four search videos are indexed"
+      ],
+      "done_when": [
+        "the check cell of the exercise in 4.9 prints `PASS`"
+      ],
+      "milestone_cell_id": "05-ex-perfile-check"
+    },
+    {
+      "id": "part1",
+      "kind": "assessment",
+      "block": "Part 1",
+      "minutes": 25,
+      "title": "Part 1 Assessment",
+      "path": "part1/assessment.ipynb",
+      "summary": "On your own: use the building blocks on a new 30-second clip, answer eight questions, and submit.",
+      "needs_before": [
+        "notebooks 1 to 4 done",
+        "the lab pill is green"
+      ],
+      "done_when": [
+        "the Submit cell shows PASSED and you have clicked ASSESS TASK on the course page"
+      ],
+      "grades": "On your own, you use VIOS, RT-CV, Kafka, Elasticsearch and RT-VLM on a new clip, search the four traffic videos with RT-Embed, then answer eight questions.",
+      "milestone_cell_id": "p1-submit"
+    },
+    {
+      "id": "agent",
+      "kind": "terminal",
+      "block": "Part 1",
+      "minutes": 40,
+      "title": "VSS Coding Agent Skills",
+      "course_docs": "course/vss-coding-agent-skills.md",
+      "summary": "Have a coding agent with the VSS skills process four traffic videos, report possible collisions with clip links, and watch a live stream for a collision.",
+      "needs_before": [
+        "Codex signed in (notebook 0)",
+        "the lab pill is green"
+      ],
+      "done_when": [
+        "Checkpoint 1 of the page: the coding agent has added the four videos under `agent_` names, extracted their metadata and reported possible collisions with VIOS clip links, and you have checked one clip against the report",
+        "Checkpoint 2: RT-VLM has watched the live stream `agent_collision_live`, and you have opened a clip of its alert from the VIOS recording, or read why no alert came"
+      ],
+      "evidence": [
+        "work/agent/live_source.json"
+      ]
+    },
+    {
+      "id": "lunch",
+      "kind": "lunch",
+      "minutes": 45,
+      "title": "Lunch",
+      "summary": "Save your work with Save HTMLs on the Home page. Then, on the course page, click STOP TASK for Part 1 and START for Part 2. Only one lab runs at a time."
+    },
+    {
+      "id": "part2",
+      "kind": "slides",
+      "block": "Part 2",
+      "minutes": 210,
+      "title": "Part 2: Applying VSS to Traffic Anomalies",
+      "summary": "On its own launch: you deploy VSS for traffic anomalies, generate synthetic data, and fine-tune the Cosmos 3 Nano verifier. Then you deploy the fine-tuned model, have the coding agent evaluate VSS, and take the Part 2 assessment."
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "passed": true,
+  "fails": [
+    "part1.throughput_estimate"
+  ],
+  "services": "up",
+  "note": "86,400 busy seconds, a whole day, where 8,640 x 4,200 ms gives 36,288"
+}

@@ -1,0 +1,9 @@
+{
+  "passed": false,
+  "fails": [
+    "part1.search_hit_overlaps_collision",
+    "part1.search_matches_reference"
+  ],
+  "services": "up",
+  "note": "seconds measured from the wrong anchor run past the end of the clip"
+}

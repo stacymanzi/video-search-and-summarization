@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "questions": {
+    "p1-q1": "B",
+    "p1-q2": "D",
+    "p1-q3": "A",
+    "p1-q4": "C",
+    "p1-q5": "B",
+    "p1-q6": "D",
+    "p1-q7": "A",
+    "p1-q8": "C"
+  },
+  "min_correct": 6,
+  "explanations": {
+    "p1-q1": "In this deployment the /complete call to the VSS agent service passes a new file to RT-CV and RT-Embed. A video stored in VIOS without that call is kept and can be played back, but nothing analyzes it.",
+    "p1-q2": "RT-CV names its records after the file stem. The VIOS name, junction_1, is for display only. The VIOS sensor id is what you use to cut clips and what RT-Embed stores in sensor.id.",
+    "p1-q3": "A Kafka consumer receives each message as soon as it is published, so it can react at once. Elasticsearch keeps indexed records that you can query and aggregate later. Topics keep messages only for their configured retention.",
+    "p1-q4": "A one-at-a-time estimate ignores that RT-VLM batches requests that arrive together. Throughput grows with the number of cameras, and each answer takes longer. Measure both at the load you plan before you size a deployment.",
+    "p1-q5": "The model sees only the frames it samples. Eight frames over 30 seconds leave gaps of about 3.75 seconds. More frames per chunk, or shorter chunks, close the gaps at the cost of more tokens or more calls.",
+    "p1-q6": "A specific question with a fixed answer format gives an answer a program can parse, and a one-word answer is the cheapest call. A long caption can describe a crash without the word you search for, and reasoning adds time to every call.",
+    "p1-q7": "RT-CV finds objects by how they look: it stores a 1,152-value embedding with the objects it detects, and its text encoder puts a short text in the same space. RT-Embed finds events: every 5-second chunk of video carries a 768-value Cosmos-Embed1 embedding. TrafficCamNet RT-DETR has no color label and no collision label.",
+    "p1-q8": "A kNN search ranks by similarity and always fills the list. The gap between a real query and an unrelated control query is the signal, and watching the clip is the proof."
+  }
+}

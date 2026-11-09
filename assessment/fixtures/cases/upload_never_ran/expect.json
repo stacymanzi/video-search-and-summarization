@@ -1,0 +1,8 @@
+{
+  "passed": false,
+  "fails": [
+    "part1.video_in_vios"
+  ],
+  "services": "up",
+  "note": "the T1 check ran before the upload: no sensor id"
+}

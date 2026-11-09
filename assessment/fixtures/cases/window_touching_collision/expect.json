@@ -1,0 +1,6 @@
+{
+  "passed": true,
+  "fails": [],
+  "services": "up",
+  "note": "15 to 20 s, the top hit of its query, shares 0.79 s with the collision at 19.21 s"
+}

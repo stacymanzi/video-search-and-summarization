@@ -1,0 +1,95 @@
+{
+  "version": "2026-11-02.2",
+  "_comment": "Checks and numbers for the Part 1 grader. part1/quiz.py repeats the same numbers for the notebook's own checks, so change both together. The lab image ships this file, so it never holds an answer: the multiple-choice key lives only in the assessment image (grader/answer_keys/).",
+  "certificate": "all_listed",
+  "assessments": [
+    "part1"
+  ],
+  "part1": {
+    "title": "Part 1 Assessment",
+    "label": "Part 1",
+    "notebook": "part1/assessment.ipynb",
+    "answers_file": "/dli/task/work/assessment/answers.json",
+    "clip_stem": "rain_check",
+    "search_files": [
+      "normal_eval.mp4",
+      "rain_eval.mp4",
+      "fog_eval.mp4",
+      "night_eval.mp4"
+    ],
+    "pass_rule": "all_must",
+    "pass_rule_text": "You pass when T1, T2, T4 and the T5 search pass and at least 6 of the 8 multiple-choice answers are correct. T3, T6, T7 and whether your T5 window shows a labelled collision are reported to you but do not decide the result.",
+    "thresholds": {
+      "clip_seconds": 30,
+      "chunks_at_10_s": [
+        3,
+        4
+      ],
+      "chunks_at_0_s": 1,
+      "frames_per_chunk": 8,
+      "kafka_timestamp_slack_s": 0.5,
+      "search_k": 5,
+      "search_slack_s": 0.1,
+      "window_slack_s": 1.0,
+      "seconds_per_day": 86400,
+      "chunk_duration_s": 10,
+      "throughput_tolerance": 0.15
+    },
+    "checks": [
+      {
+        "id": "part1.video_in_vios",
+        "task": "p1-t1",
+        "must": true,
+        "text": "T1: VIOS lists the sensor id in t1.vios_sensor_id, under the name in t1.vios_name (rain_check or rain_check_<n>), and it has a recorded timeline."
+      },
+      {
+        "id": "part1.detections_indexed",
+        "task": "p1-t2",
+        "must": true,
+        "text": "T2: t2.frames equals the number of RT-CV frame records Elasticsearch holds for sensorId rain_check (mdx-raw-2025-01-01), and t2.top_type is the most frequent object type in those records."
+      },
+      {
+        "id": "part1.kafka_decoded",
+        "task": "p1-t3",
+        "must": false,
+        "text": "T3: t3 comes from a decoded mdx-raw message of this clip. t3.sensor_id is rain_check, and Elasticsearch holds a rain_check frame with id t3.frame_id at t3.timestamp."
+      },
+      {
+        "id": "part1.captions_indexed",
+        "task": "p1-t4",
+        "must": true,
+        "text": "T4: At chunk_duration 10, RT-VLM split the 30 s clip into 3 or 4 chunks. At chunk_duration 0 it made 1 chunk. With 8 sampled frames, every full chunk reported frame_count 8 (a short last chunk may report fewer). The caption index default_<t4.file_id, with - replaced by _> holds your captions."
+      },
+      {
+        "id": "part1.search_matches_reference",
+        "task": "p1-t5",
+        "must": true,
+        "text": "T5: a search of the four search clips for t5.query returns your window first. It is the same file, and its start and end are within 0.1 s of the top hit's. Times are seconds from 2025-01-01T00:00:00Z, the anchor the embedding index uses."
+      },
+      {
+        "id": "part1.search_hit_overlaps_collision",
+        "task": "p1-t5",
+        "must": false,
+        "text": "T5 (reported): your window overlaps a labelled collision in that clip."
+      },
+      {
+        "id": "part1.appearance_match",
+        "task": "p1-t6",
+        "must": false,
+        "text": "T6: t6.answer_object_id is the object that a nested kNN on objects.embedding.vector ranks first for the query object t6.query_object_id, in a frame other than the query's own."
+      },
+      {
+        "id": "part1.throughput_estimate",
+        "task": "p1-t7",
+        "must": false,
+        "text": "T7: t7.requests_per_day is 8,640, one 10-second chunk every 10 seconds for a day. t7.busy_seconds_per_day is within 15 percent of 8,640 x t7.latency_ms / 1000: the seconds RT-VLM would spend on one camera per day if it answered one request at a time."
+      },
+      {
+        "id": "part1.questions",
+        "task": "questions",
+        "must": true,
+        "text": "Multiple choice: at least 6 of the 8 answers in answers.json are correct."
+      }
+    ]
+  }
+}

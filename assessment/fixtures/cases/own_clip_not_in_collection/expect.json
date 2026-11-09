@@ -1,0 +1,9 @@
+{
+  "passed": false,
+  "fails": [
+    "part1.search_hit_overlaps_collision",
+    "part1.search_matches_reference"
+  ],
+  "services": "up",
+  "note": "a window of the learner's own clip, not of the search clips"
+}

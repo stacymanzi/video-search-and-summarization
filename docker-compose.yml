@@ -1,0 +1,349 @@
+# Uncomment version only if using legacy VM
+# version: '2.3'
+
+# NOTE ON SECRETS: no service below names a secret in `environment:`. A bare
+# `- SOME_KEY` entry is resolved from the *shell* running docker-compose, and
+# `environment:` outranks `env_file:`, so an unset shell variable silently
+# overwrites the value supplied by .env-dev or /dli/secrets/.env with an empty
+# string. Secrets arrive ONLY via `env_file:` in the two overlays, and only on
+# vss-deploy. lab, course-prep and assessment never see one.
+
+volumes:
+  # Course assets pulled from S3 by s3_data_loader. This is the durable source;
+  # it must remain outside upstream's disposable data-dir.
+  course_data:
+  dind_storage:      # inner VSS image layers. MUST be a named volume for overlay2
+  vss_models:        # verified model/engine caches, outside disposable VSS data-dir
+  vss_src:           # upstream blueprint checkout (see the path-aliasing note below)
+  # The grader's marker (/dli/assessment_results/part1.json, the Part 1
+  # assessment). Written only by the assessment service; the lab mounts it
+  # read-only so a learner kernel cannot forge a pass (CONTRACTS.md section 5).
+  assessment_results:
+
+# `services` defines the containers you want to run. There will always be at least 2:
+# a `lab` container for your content, and `nginx` as a reverse proxy.
+services:
+  # This is the main content container.
+  lab:
+    runtime: nvidia
+    init: true
+    volumes:
+      # s3_data_loader downloads the entities listed in ./data_sources here.
+      - course_data:/dli/task/data
+      # Same absolute path as in dind. Required for anything that drives the
+      # inner daemon from here: the compose CLIENT runs in this container, the
+      # DAEMON resolves bind mounts in dind, so both must see the checkout at
+      # the identical path. The notebooks also read the deployer's status files
+      # from /opt/vss/_course-runtime/ through this mount.
+      - vss_src:/opt/vss
+      # Read-only on purpose. See the volume comment above.
+      - assessment_results:/dli/assessment_results:ro
+    depends_on:
+      # Only dind. The lab must NOT wait for vss-deploy or course-prep: both run
+      # for tens of minutes on a cold launch and the platform destroys a VM whose
+      # :80/lab does not answer within minutes. The readiness check in the
+      # onboarding notebook (part1/00-onboarding.ipynb) waits for the stack
+      # instead, and the onboarding notebook and notebook 4 raise until
+      # course-prep reports OK.
+      dind:
+        condition: service_healthy
+    environment:
+      # The docker CLI in the lab talks to the dind daemon: the onboarding
+      # notebook and notebook 1 run docker inspect, docker exec and docker ps,
+      # and notebook 2 and the Part 1 assessment read Kafka with
+      # `docker exec kafka ...`. No NGC credential is provided to the lab, but
+      # `docker inspect` through this daemon shows the inner containers'
+      # environments, and those hold the course NGC key (deploy/deploy-vss.sh,
+      # "credential containment"). That is why the coding agent (Codex) starts
+      # with `env -u DOCKER_HOST` (VSS Coding Agent Skills, the Course Docs
+      # page docs/course/vss-coding-agent-skills.md).
+      - DOCKER_HOST=tcp://dind:2375
+      # The entrypoint resolves this outer service name to a numeric address and
+      # exports that value as HOST_IP. A literal HOST_IP=dind poisons upstream
+      # Compose because inner VSS containers cannot resolve the outer name.
+      - DLI_DIND_HOSTNAME=dind
+      - NGC_CLI_ORG=${NGC_CLI_ORG:-nvidia}
+      - VSS_PROFILE=${VSS_PROFILE:-search}
+      # The lab must SEE every GPU: notebook 1 (section 1.4) runs nvidia-smi
+      # here and expects both. Pinning NVIDIA_VISIBLE_DEVICES here once made a
+      # coding agent report "this host has only one GPU" and refuse a two-GPU
+      # layout.
+      #
+      # Learner kernels are steered instead with CUDA_VISIBLE_DEVICES, which
+      # constrains the CUDA runtime without hiding devices from nvidia-smi.
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      - CUDA_VISIBLE_DEVICES=${LAB_DEVICE_ID:-0}
+      # VSS endpoints, reachable over the compose network inside dind's namespace.
+      #
+      # DELIBERATELY PREFIXED `COURSE_`. The unprefixed names (LLM_BASE_URL,
+      # VLM_BASE_URL, ...) are the SAME names upstream's own tooling reads. When
+      # a deploy ran from a terminal in this container, these leaked into the
+      # deploy's environment and overrode the values upstream had generated.
+      # Keep the prefix. The notebooks themselves go through http://nginx/...
+      # (CONTRACTS.md section 1); these are for scripts and the terminal.
+      #
+      # The port a BROWSER uses. Exported HERE, not just in .env, because .env
+      # only feeds compose interpolation: it puts nothing inside the container.
+      # Compose gives the shell environment precedence over the --env-file
+      # dev-profile.sh passes, so this overrides the profile's
+      # `VSS_PUBLIC_PORT=${HAPROXY_PORT}` default for anything launched from the
+      # terminal. deploy-vss.sh exports it for the course-side deploy.
+      - VSS_PUBLIC_PORT=${VSS_PUBLIC_PORT:-80}
+      - COURSE_LLM_BASE_URL=http://dind:30081
+      - COURSE_VIOS_BASE_URL=http://dind:30888/vst/api
+      - COURSE_ELK_BASE_URL=http://dind:9200
+      # The three perception services the course studies. Inner VSS services are
+      # network_mode: host inside dind, so they bind on dind's address and are
+      # reachable by service name from here. RT-VLM is the only VLM in the
+      # course (BUILD.md D4); there is no COURSE_VLM_BASE_URL.
+      - COURSE_RTVI_CV_BASE_URL=http://dind:9000
+      - COURSE_RTVI_EMBED_BASE_URL=http://dind:8017
+      - COURSE_RTVI_VLM_BASE_URL=http://dind:${VSS_RT_VLM_PORT:-8018}
+      - COURSE_AGENT_BASE_URL=http://dind:8000
+      # Secure learner access with a token.
+      # See entrypoint.sh for how this is used.
+      - JUPYTER_TOKEN
+
+  # Docker-in-Docker. This is why the course can run VSS 3.x at all: VSS requires
+  # host-level prerequisites (cgroupfs cgroup driver, network sysctls) that the
+  # DLI platform cannot supply, because Pebble builds containers and does not
+  # configure hosts. dind is a Docker daemon the course owns, where those
+  # prerequisites are met without root on the course VM. See ARCHITECTURE.md.
+  #
+  # It deliberately does NOT use `network_mode: host`. Inner VSS containers that
+  # declare host networking join THIS container's namespace, which is all they
+  # need: they address each other over localhost. Keeping the namespace private
+  # is what lets us set the sysctls and keeps the Docker API off the host NIC.
+  #
+  # NVIDIA_VISIBLE_DEVICES=all is also deliberate: it preserves host device
+  # numbering inside the inner daemon, so LLM_DEVICE_ID and VLM_DEVICE_ID mean
+  # the same thing here as on the host. Pinning
+  # dind to a subset would renumber devices from 0 and silently target the
+  # wrong GPUs.
+  dind:
+    privileged: true          # required: nested dockerd
+    cgroup: private           # required: cgroup v2 threaded-mode fix
+    runtime: nvidia
+    # REQUIRED for RT-VLM. Upstream sets `shm_size: 16gb` on vss-rtvi-vlm, but
+    # that service also declares `ipc: host`, and under DinD "host" is THIS
+    # container. The inner service therefore inherits dind's /dev/shm (64 MB by
+    # default) and upstream's 16 GB is silently discarded.
+    #
+    # The failure is invisible from the API: every healthcheck passes and the
+    # VLM query simply parks at "percent complete is 0.00" forever while its
+    # logs fill with
+    #   RuntimeError: unable to allocate shared memory(shm) ... (11)
+    # No caption is ever produced, which looks like a content problem rather
+    # than a memory limit. Diagnosed the hard way.
+    #
+    # 16g matches upstream's own value (17179869184). To fix a RUNNING stack
+    # without redeploying: `docker exec <dind> mount -o remount,size=16g /dev/shm`
+    # because `ipc: host` makes that visible to the inner service immediately, with no
+    # container restart.
+    shm_size: 16gb
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      # `video` adds NVDEC: the inner containers can only receive driver capabilities that THIS container has.
+      # VSS's DeepStream CV pipeline (RT-CV) decodes streams on the GPU and needs it.
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
+      - VSS_PROFILE=${VSS_PROFILE:-search}
+      - HARDWARE_PROFILE=${HARDWARE_PROFILE:-H100}
+    volumes:
+      - dind_storage:/var/lib/docker
+      - vss_models:/models
+      # Course assets (S3-loaded) must be visible to the INNER daemon too: bind-mount
+      # sources resolve on the daemon side. Same volume, same path as in `lab` -
+      # one copy, two mount points.
+      - course_data:/dli/task/data
+      # PATH ALIASING: the load-bearing trick. The upstream checkout must be
+      # visible at the SAME absolute path in dind as in vss-deploy. The compose
+      # *client* runs in vss-deploy and reads the compose files; the *daemon*
+      # runs here and resolves every bind-mount source. Identical paths on both
+      # sides is the only reason ${data_directory}/... mounts resolve at all.
+      # Get this wrong and nothing errors at build time: the daemon just
+      # creates empty dirs, or fails with "no such file or directory" at run.
+      - vss_src:/opt/vss
+    healthcheck:
+      test: ["CMD", "docker", "info"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    restart: unless-stopped
+
+  # One-shot: brings the VSS blueprint up inside dind, then exits 0. This is the
+  # piece that replaces "a human with host access runs dev-profile.sh".
+  # Its NGC credential arrives via env_file in the override/deployment yamls.
+  # It does NOT depend on s3_data_loader: a `service_completed_successfully`
+  # gate held `docker compose up -d` open for the whole ~80 GB download and
+  # failed `up` outright on one missing key (production launch fix 3, after tag
+  # v0.0.4). deploy-vss.sh waits for /dli/task/data/.course-data-status.json
+  # itself instead (cap COURSE_DATA_TIMEOUT_S) and writes FAILED to seed-status
+  # if the loader failed.
+  # GPU visibility is needed for DETECTION, not for compute: dev-profile.sh
+  # fails fast unless nvidia-smi reports a GPU matching --hardware-profile.
+  # `all` so it sees the same devices the inner containers will be given.
+  vss-deploy:
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      - DOCKER_HOST=tcp://dind:2375
+      # Upstream Dockerfiles use COPY --chmod, which needs BuildKit. Requires
+      # docker-buildx-plugin in the deploy image; the daemon-side feature flag
+      # alone is not enough.
+      - DOCKER_BUILDKIT=1
+      - COMPOSE_DOCKER_CLI_BUILD=1
+      - VSS_PROFILE=${VSS_PROFILE:-search}
+      - VSS_VERSION=${VSS_VERSION:-3.2.1}
+      - HARDWARE_PROFILE=${HARDWARE_PROFILE:-H100}
+      - LLM_DEVICE_ID=${LLM_DEVICE_ID:-1}
+      - VLM_DEVICE_ID=${VLM_DEVICE_ID:-1}
+      - USE_REMOTE_LLM=${USE_REMOTE_LLM:-false}
+      - VSS_NEMOTRON_USE_S3_CACHE=${VSS_NEMOTRON_USE_S3_CACHE:-true}
+      - USE_REMOTE_VLM=${USE_REMOTE_VLM:-false}
+      # true = tear down and rebuild the inner stack even if it is healthy
+      - VSS_FORCE_REDEPLOY=${VSS_FORCE_REDEPLOY:-false}
+      # false = the course deploys at launch (BUILD.md D3). true = seed caches
+      # and exit, leaving the deploy to a human; not used by course 1.
+      - VSS_STUDENT_DEPLOYS=${VSS_STUDENT_DEPLOYS:-false}
+      - VSS_SEED_CACHES=${VSS_SEED_CACHES:-true}
+      # Course-owned images to seed alongside the VSS profile (space-separated). See COURSE_EXTRA_IMAGES in .env.
+      - COURSE_EXTRA_IMAGES=${COURSE_EXTRA_IMAGES:-}
+      # RT-VLM is not in the v3.2.1 search profile; deploy-vss.sh patches it in.
+      # See the block of the same names in .env.
+      - VSS_ENABLE_RT_VLM=${VSS_ENABLE_RT_VLM:-true}
+      - VSS_RT_VLM_DEVICE_ID=${VSS_RT_VLM_DEVICE_ID:-0}
+      - VSS_RT_VLM_PORT=${VSS_RT_VLM_PORT:-8018}
+      - VSS_RT_VLM_MODEL_PATH=${VSS_RT_VLM_MODEL_PATH:-ngc:nim/nvidia/cosmos3-super-reasoner:modelopt-fp8-final_format_fix}
+      - VSS_RT_VLM_USE_S3_CACHE=${VSS_RT_VLM_USE_S3_CACHE:-true}
+      - VSS_RT_EMBED_USE_S3_CACHE=${VSS_RT_EMBED_USE_S3_CACHE:-true}
+      - VSS_RT_CV_USE_S3_CACHE=${VSS_RT_CV_USE_S3_CACHE:-true}
+      # Default matches .env: Super/fp8 cannot load at the old 0.45 default.
+      - VSS_RT_VLM_GPU_MEMORY_UTILIZATION=${VSS_RT_VLM_GPU_MEMORY_UTILIZATION:-0.65}
+      - VSS_NUM_STREAMS=${VSS_NUM_STREAMS:-4}
+      - VSS_RT_CV_MODEL=${VSS_RT_CV_MODEL:-smartcity}
+      # Drops the cosmos3-reasoner NIM critic, which the v3.2.1 search profile
+      # schedules onto a nonexistent GPU 2 on this 2-GPU host.
+      - ENABLE_CRITIC=${ENABLE_CRITIC:-false}
+      - VSS_EXTERNAL_HOST=${VSS_EXTERNAL_HOST:-}
+      - NGC_CLI_ORG=${NGC_CLI_ORG:-nvidia}
+      # Readiness cap for deploy/wait-for-vss.sh (positive integer seconds; the
+      # waiter writes FAILED and exits 1 otherwise). Set from the measured
+      # Friday launch; see .env.
+      - VSS_READY_TIMEOUT_S=${VSS_READY_TIMEOUT_S:-3600}
+      # How long deploy-vss.sh waits for the S3 loader's marker to read OK
+      # (positive integer seconds; FAILED in seed-status otherwise). See .env.
+      - COURSE_DATA_TIMEOUT_S=${COURSE_DATA_TIMEOUT_S:-5400}
+    volumes:
+      # Same path as in dind. See the path-aliasing note on the dind service.
+      - vss_src:/opt/vss
+      - course_data:/dli/task/data:ro
+      - vss_models:/models
+    depends_on:
+      dind:
+        condition: service_healthy
+    restart: "no"
+
+  # One-shot launch-time preparation (BUILD.md D12, CONTRACTS.md section 6). Runs
+  # the lab image with a different entrypoint and prepares the search collection
+  # of notebook 4: waits for the S3 loader's marker, waits for
+  # http://nginx/agent/health (bounded, prints elapsed time), ingests the four
+  # search clips through course_setup.ingest_file, waits until their
+  # Cosmos-Embed1 records cover each timeline, and writes the registry
+  # /dli/task/data/search_sources.json and the status file
+  # /dli/task/data/course_prep_status.json, and appends to
+  # /dli/task/data/course_prep.log. It writes nothing else. It raises on any
+  # failure, with the reason in the status file; the onboarding notebook and
+  # notebook 4 print the status file and raise until it says OK.
+  #
+  # No GPU, no secrets, no DOCKER_HOST: everything it needs is behind nginx.
+  # It does not depend on vss-deploy on purpose: the health wait covers the
+  # deploy, and a deploy failure then shows up here as a timeout with the
+  # deployer's status tail, not as a container that never started. Nor on
+  # s3_data_loader, for the reason given on vss-deploy: prepare_course.py waits
+  # for /dli/task/data/.course-data-status.json itself (cap
+  # COURSE_DATA_TIMEOUT_S) before it reads any clip, and writes the loader's
+  # failure into course_prep_status.json.
+  #
+  # The script is image content at /dli/prep (lab/Dockerfile `COPY lab/prep
+  # /dli/prep`, BUILD.md 5a decision 6), deliberately outside /dli/task, which
+  # the override bind-mounts and the deployment file replaces with the `task`
+  # volume. No compose file bind-mounts the script. It imports course_setup
+  # from /dli/task/part1 through the image's PYTHONPATH.
+  course-prep:
+    entrypoint: ["python3", "/dli/prep/prepare_course.py"]
+    environment:
+      - PYTHONUNBUFFERED=1
+      - COURSE_PREP_HEALTH_TIMEOUT_S=${COURSE_PREP_HEALTH_TIMEOUT_S:-5400}
+      - COURSE_PREP_EMBED_TIMEOUT_S=${COURSE_PREP_EMBED_TIMEOUT_S:-1800}
+      - COURSE_DATA_TIMEOUT_S=${COURSE_DATA_TIMEOUT_S:-5400}
+    volumes:
+      # Clips in; the registry, the status file and the log out. Same volume
+      # as lab and dind.
+      - course_data:/dli/task/data
+      # Read-only: course_setup.status_tail() reads the deployer's seed-status
+      # and seed.log from /opt/vss/_course-runtime/ for the wait's progress line.
+      - vss_src:/opt/vss:ro
+    depends_on:
+      dind:
+        condition: service_healthy
+      nginx:
+        condition: service_started
+    restart: "no"
+
+  # Grader (BUILD.md D9, CONTRACTS.md section 5). The lab image with
+  # entrypoint.assessment.sh: V1's Go assessment_runner on 8080, which the LMS
+  # calls and which runs tasktest.py, plus grader/serve.py on 8081, which the
+  # Submit cell of the Part 1 assessment (part1/assessment.ipynb) POSTs to
+  # (http://assessment:8081/grade/part1). Checks run HERE, against
+  # http://nginx/{es,vios,rtvi-embed}, and the marker
+  # (/dli/assessment_results/part1.json) lands in assessment_results, which the
+  # lab cannot write. Shares /dli/task with the lab (bind mount in dev, the
+  # `task` volume in production) to read the learner's answers under
+  # /dli/task/work/assessment/.
+  assessment:
+    entrypoint: /dli/entrypoint.assessment.sh
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - assessment_results:/dli/assessment_results
+      # Read-only. The Part 1 grader's T5 check (a must) reads course-prep's
+      # registry, search_sources.json, here. It keeps its own copy of
+      # ground_truth/search_videos.json (grader/answer_keys/ground_truth/),
+      # because the lab can write to /dli/task/data.
+      - course_data:/dli/task/data:ro
+    restart: unless-stopped
+
+  # All services should be proxied through nginx, and all should be accessible
+  # on port 80, for compatibility with restricted corporate networks and to
+  # be compatible with upcoming course requirements.
+  nginx:
+    image: nginx:1.15.12-alpine
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - lab
+
+  # This optional container is used for asynchronous data loading.
+  # Nothing waits on it through compose: `up -d` returns while it downloads.
+  # load-course-data.py writes /data/.course-data-status.json (RUNNING, then OK
+  # or FAILED), which vss-deploy and course-prep poll. No `restart:` on
+  # purpose: a failed loader must stay failed so the waiters report it.
+  s3_data_loader:
+    image: nvdli/s3_data_loader:latest
+    entrypoint: ["python", "/var/load-course-data.py"]
+    volumes:
+      - $HOME/.aws/credentials:/root/.aws/credentials:ro
+      # Mount `data_sources` with locations of data to download
+      - ./data_sources:/var/data_sources
+      - ./load-course-data.py:/var/load-course-data.py:ro
+      - ./deploy/rt-vlm-checkpoint.json:/var/rt-vlm-checkpoint.json:ro
+      - ./deploy/nemotron-checkpoint.json:/var/nemotron-checkpoint.json:ro
+      - ./deploy/rt-embed-checkpoint.json:/var/rt-embed-checkpoint.json:ro
+      - ./deploy/rt-cv-checkpoint.json:/var/rt-cv-checkpoint.json:ro
+      # Mapping to data volume from downloaded location of /data
+      - course_data:/data
+      # The wrapper routes the separate model prefix into this runtime volume.
+      - vss_models:/data/models

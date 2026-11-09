@@ -1,0 +1,8 @@
+{
+  "passed": true,
+  "fails": [
+    "part1.search_hit_overlaps_collision"
+  ],
+  "services": "up",
+  "note": "the top hit of a rain query shows no labelled collision: reported only"
+}

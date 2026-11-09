@@ -1,0 +1,24 @@
+{
+  "source": "ngc:nim/nvidia/cosmos3-super-reasoner:modelopt-fp8-final_format_fix",
+  "directory": "nim_nvidia_cosmos3-super-reasoner_modelopt-fp8-final_format_fix",
+  "version": "cosmos3-super-fp8-20261008-files-v1",
+  "files": [
+    {"name":"chat_template.jinja","bytes":5292,"sha256":"3636d0f0bd6bef02654cdffdc447b79cb2cef8ab02cc75267345946291a489e4"},
+    {"name":"chat_template.json","bytes":5499,"sha256":"5c72a170d2a4a1a3bc5adad2e689ae28138a9700e5b8c96c0266331e86c0acce"},
+    {"name":"config.json","bytes":2704,"sha256":"5b8c0d065f30b302cb2902e73c4cdc40063554cf1517aead7c6c6038722ee3e3"},
+    {"name":"generation_config.json","bytes":269,"sha256":"1e241830b48b397cb0900101421df5450baddc7adf01e5fc86b5615865f3bae4"},
+    {"name":"hf_quant_config.json","bytes":287,"sha256":"132b4dd70c063332e7be455983a3a6b7229fc3132f59b18bc4920d398a67de04"},
+    {"name":"merges.txt","bytes":1671839,"sha256":"599bab54075088774b1733fde865d5bd747cbcc7a547c5bc12610e874e26f5e3"},
+    {"name":"model-00001-of-00004.safetensors","bytes":9929483968,"sha256":"5540a96c7c733a59031e0d89f91b0327fbb2b29cae2ff0f95a10fc075425fb09"},
+    {"name":"model-00002-of-00004.safetensors","bytes":9977705152,"sha256":"0b513bfd674271383a79969d5ab59f14d11071c44e03f741d9a5aa152f080b47"},
+    {"name":"model-00003-of-00004.safetensors","bytes":9883310320,"sha256":"299401aea62e4aa5784ce382642a2d7460ad2b274a24348a5be077c44f378cb4"},
+    {"name":"model-00004-of-00004.safetensors","bytes":5718895968,"sha256":"c89bf13d6fe3d7de8e628a74767003687e1a37fbd79744160ad5a3fd97003672"},
+    {"name":"model.safetensors.index.json","bytes":189056,"sha256":"c5a411e27408b0dab764667e3076be6c241d868959e8a9600f22964ac42db837"},
+    {"name":"preprocessor_config.json","bytes":390,"sha256":"27225450ac9c6529872ee1924fcb0962ff5634834f817040f444118116f4e516"},
+    {"name":"processor_config.json","bytes":1191,"sha256":"d89ef49ce9cd37fbf510158e13c1ef063d9286411c1ec9049932dbe0487143b1"},
+    {"name":"tokenizer.json","bytes":7032403,"sha256":"a5d85b6dcc535e6b93115a9ef287e6132fdbf30270da6218194ba742261173c7"},
+    {"name":"tokenizer_config.json","bytes":10868,"sha256":"c2da771801886ad9ae98181793ffd3dfb7f1af30f6f7c6a4e15d7dbba52e2399"},
+    {"name":"video_preprocessor_config.json","bytes":385,"sha256":"7768af27c1fafa9cc9011c1dc20067e03f8915e03b63504550e11d5066986d13"},
+    {"name":"vocab.json","bytes":2776833,"sha256":"ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910"}
+  ]
+}

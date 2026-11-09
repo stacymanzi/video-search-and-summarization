@@ -1,0 +1,43 @@
+# Governs the lab/assessment image build. The compose files build with
+# `context: .` (this directory) and `dockerfile: lab/Dockerfile`, so THIS file,
+# not lab/.dockerignore, decides what the builder receives.
+#
+# RULE (production launch failure 2026-10-22, tag v0.0.2): the DLI launch
+# tarball is cut from task1/ and this file is honoured there as well as in the
+# image build. Everything the VM needs at launch (docker-compose*.yml, .env,
+# nginx.conf, data_sources, load-course-data.py, deploy/, dind/, .launchignore)
+# must therefore NOT be listed here, even though the image never copies it:
+# lab/Dockerfile copies specific paths only, so an unlisted file costs nothing.
+# .launchignore alone decides what stays out of the tarball.
+
+# Secrets and local config. .env-dev holds the dev NGC key: never in an image
+# and never on a learner VM (.launchignore lists it too).
+.env-dev
+
+# Host-side tooling. task1/tests is the offline gate and task1/scripts the
+# publishing helpers; neither is image content or launch content. The grader's
+# tests ship with its code.
+tests
+scripts
+
+# Learner output on a devbox (bind-mounted tree); never image content. That
+# includes what the coding agent writes under work/agent/.
+lab/task/work
+# No git repository is ever baked into an image, wherever a devbox left one.
+**/.git
+
+# Caches, data, checkpoints.
+.git
+**/data
+**/models
+**/results
+**/.ipynb_checkpoints
+**/__pycache__
+**/.pytest_cache
+**/.Trash*
+**/*.zip
+**/*.tgz
+**/*.tar.gz
+**/*.tar
+**/devonly*
+**/skill_walkthrough

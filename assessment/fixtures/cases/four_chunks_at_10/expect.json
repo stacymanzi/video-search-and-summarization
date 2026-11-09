@@ -1,0 +1,6 @@
+{
+  "passed": true,
+  "fails": [],
+  "services": "up",
+  "note": "four chunks at chunk_duration 10: the cut ended with a short extra chunk"
+}

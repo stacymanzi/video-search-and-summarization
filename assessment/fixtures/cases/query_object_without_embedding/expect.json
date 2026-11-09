@@ -1,0 +1,8 @@
+{
+  "passed": true,
+  "fails": [
+    "part1.appearance_match"
+  ],
+  "services": "up",
+  "note": "object 15 is too small to carry an embedding"
+}

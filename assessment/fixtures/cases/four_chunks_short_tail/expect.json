@@ -1,0 +1,6 @@
+{
+  "passed": true,
+  "fails": [],
+  "services": "up",
+  "note": "the cut ran 0.2 s past 30 s: the fourth chunk saw only 2 frames"
+}

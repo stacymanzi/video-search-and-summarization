@@ -1,0 +1,8 @@
+{
+  "passed": false,
+  "fails": [
+    "part1.search_matches_reference"
+  ],
+  "services": "up",
+  "note": "normal_eval 45 to 50 s is the second hit for the query, not the first"
+}

@@ -1,0 +1,6 @@
+{
+  "passed": true,
+  "fails": [],
+  "services": "up",
+  "note": "the type name is compared without case"
+}

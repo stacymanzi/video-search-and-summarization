@@ -1,0 +1,6 @@
+{
+  "passed": true,
+  "fails": [],
+  "services": "up",
+  "note": "normal_eval named without .mp4, 45 to 50 s, the top hit of its query and inside its first collision"
+}

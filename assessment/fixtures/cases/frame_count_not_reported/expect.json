@@ -1,0 +1,8 @@
+{
+  "passed": false,
+  "fails": [
+    "part1.captions_indexed"
+  ],
+  "services": "up",
+  "note": "RT-VLM left frame_count out, so the notebook saved nulls"
+}

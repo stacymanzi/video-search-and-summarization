@@ -1,0 +1,21 @@
+# Brev override: replaces the DLI s3_data_loader with a local copy from pre-staged assets.
+# Apply with:
+#   docker-compose -f docker-compose.yml -f docker-compose.override.yml -f docker-compose.brev.yml up -d
+#
+# Host layout expected at BREV_ASSETS_DIR (default /home/ubuntu/course-assets):
+#   videos/traffic_short.mp4
+#   videos/search-videos/{normal,rain,fog,night}_eval.mp4
+#   course-docs/   (built Sphinx site: uv run --project docs sphinx-build -b html docs docs/_build/html)
+
+services:
+  s3_data_loader:
+    image: python:3.11-slim
+    entrypoint: ["python", "/var/load-local-data.py"]
+    volumes:
+      - ${BREV_ASSETS_DIR:-/home/ubuntu/course-assets}:/brev-assets:ro
+      - ./load-local-data.py:/var/load-local-data.py:ro
+      # Repo mount so the loader can read ground_truth/search_videos.json from the image.
+      - ./:/repo:ro
+      - course_data:/data
+    # Remove the AWS credentials and checkpoint mounts the base service has.
+    # (compose merge: redefining volumes replaces the list entirely for this service)

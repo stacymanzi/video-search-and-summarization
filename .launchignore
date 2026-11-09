@@ -1,0 +1,50 @@
+# Paths left OUT of the launch tarball (task1/ as the platform ships it to a VM).
+#
+# RULE (BUILD.md P9; DLI brief 1.5, Dana, Feb 26 2026): the override compose IS
+# applied at launch. Every bind-mount source the override names must therefore
+# either be in this tarball or be superseded by a named volume on the same
+# container path in docker-compose.deployment.yml (the deployment file is
+# merged last, so its named volume wins; `docker compose config` with all three
+# files shows the result). As shipped:
+#   /dli/task        lab, course-prep, assessment -> `task` volume (deployment wins);
+#                    lab/task still ships, exactly as in Berlin, so a launch that
+#                    merges the override last still finds the content.
+#   /dli/assessment  assessment, override only    -> `assessment` volume (deployment
+#                    wins), so assessment/ stays out and the answer keys never
+#                    land on the VM's disk (the V1 house pattern).
+#   /dli/prep        no mount at all: prepare_course.py is image content
+#                    (lab/Dockerfile `COPY lab/prep /dli/prep`, BUILD.md 5a
+#                    decision 6). lab/prep ships in the tarball only because P9
+#                    forbids lab/** patterns here; nothing on the VM reads it.
+# CI (.gitlab-ci.yml checks:platform) fails if the three-file merge leaves any
+# bind mount under /dli. Never add lab/task or lab/** patterns to this file.
+#
+# Stays IN (do not list): docker-compose*.yml, .env, data_sources,
+# load-course-data.py, nginx.conf (bind-mounted into nginx), deploy/ (its
+# *-checkpoint.json files are bind-mounted into the loader; the directory ships
+# whole), dind/ (ships whole), lab/task (and lab/prep, inert; see above).
+
+# Used in build. Not required for deployment. (Dockerfile and entrypoint.sh are
+# the template's inert lines: this course's live under lab/ and ship.)
+Dockerfile
+.launchignore
+.dockerignore
+.gitignore
+entrypoint.sh
+
+# Configures automatic deployment for builds. Not used by task.
+vm_properties.json
+
+# Included in container build. Not needed in launch tarball. assessment/ is
+# superseded by the deployment file's named volume (rule above); task/* is the
+# template's inert line (this course's content is lab/task, which ships).
+assessment/*
+task/*
+
+# Host-side tooling, never on a learner VM (the additions BUILD.md P9 allows).
+tests/*
+**/__pycache__
+**/.ipynb_checkpoints
+
+# Contains secrets (dev only); production injects /dli/secrets/.env.
+.env-dev

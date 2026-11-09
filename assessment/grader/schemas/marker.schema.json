@@ -1,0 +1,59 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "/dli/assessment_results/<assessment>.json, written by grader/serve.py",
+  "type": "object",
+  "required": [
+    "assessment",
+    "passed",
+    "checks",
+    "graded_at"
+  ],
+  "properties": {
+    "assessment": {
+      "type": "string",
+      "enum": [
+        "part1"
+      ]
+    },
+    "passed": {
+      "type": "boolean"
+    },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "must",
+          "passed",
+          "detail"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "must": {
+            "type": "boolean"
+          },
+          "passed": {
+            "type": "boolean"
+          },
+          "detail": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "graded_at": {
+      "type": "string",
+      "minLength": 1
+    },
+    "rubric_version": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  }
+}

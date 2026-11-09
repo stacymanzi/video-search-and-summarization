@@ -1,0 +1,8 @@
+{
+  "passed": true,
+  "fails": [
+    "part1.kafka_decoded"
+  ],
+  "services": "up",
+  "note": "a frame id RT-CV never wrote for this clip"
+}

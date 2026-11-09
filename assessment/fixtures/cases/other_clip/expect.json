@@ -1,0 +1,15 @@
+{
+  "passed": false,
+  "fails": [
+    "part1.appearance_match",
+    "part1.captions_indexed",
+    "part1.detections_indexed",
+    "part1.kafka_decoded",
+    "part1.search_hit_overlaps_collision",
+    "part1.search_matches_reference",
+    "part1.throughput_estimate",
+    "part1.video_in_vios"
+  ],
+  "services": "up",
+  "note": "answers for another clip: every task check fails, the questions are still graded"
+}

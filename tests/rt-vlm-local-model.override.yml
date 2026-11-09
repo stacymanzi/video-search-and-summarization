@@ -1,0 +1,27 @@
+# Integration-test override for the course's Cosmos3 Super FP8 checkpoint.
+# Source path is resolved by the INNER Docker daemon, not the Compose client.
+# Fresh volumes isolate this test from the original NGC/Hugging Face caches.
+services:
+  rtvi-vlm:
+    environment:
+      INSTALL_PROPRIETARY_CODECS: "false"
+      MODEL_PATH: /course-models/nim_nvidia_cosmos3-super-reasoner_modelopt-fp8-final_format_fix
+      HF_HUB_OFFLINE: "1"
+      TRANSFORMERS_OFFLINE: "1"
+    volumes:
+      - rtvi-local-model-empty-ngc:/opt/nvidia/rtvi/.rtvi/ngc_model_cache
+      - rtvi-local-model-empty-hf:/tmp/huggingface
+      - type: bind
+        source: ${VSS_RT_VLM_LOCAL_MODEL_DIR:?Set the restored checkpoint directory visible inside dind}
+        target: /course-models/nim_nvidia_cosmos3-super-reasoner_modelopt-fp8-final_format_fix
+        # RT-VLM creates MODEL_PATH/.lock even when weights already exist.
+        read_only: false
+        bind:
+          create_host_path: false
+      # RT-VLM overrides VLLM_CACHE_ROOT to MODEL_PATH/.vllm. Separate the
+      # writable, hardware-specific compilation cache from checkpoint files.
+      - rtvi-local-model-compile:/course-models/nim_nvidia_cosmos3-super-reasoner_modelopt-fp8-final_format_fix/.vllm
+volumes:
+  rtvi-local-model-compile:
+  rtvi-local-model-empty-ngc:
+  rtvi-local-model-empty-hf:

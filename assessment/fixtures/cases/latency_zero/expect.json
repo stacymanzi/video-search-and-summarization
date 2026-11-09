@@ -1,0 +1,8 @@
+{
+  "passed": true,
+  "fails": [
+    "part1.throughput_estimate"
+  ],
+  "services": "up",
+  "note": "no latency measured"
+}

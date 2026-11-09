@@ -1,0 +1,8 @@
+{
+  "passed": true,
+  "fails": [
+    "part1.kafka_decoded"
+  ],
+  "services": "up",
+  "note": "the first message on the topic was another clip's"
+}

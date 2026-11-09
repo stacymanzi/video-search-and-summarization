@@ -1,0 +1,9 @@
+{
+  "passed": false,
+  "fails": [
+    "part1.search_hit_overlaps_collision",
+    "part1.search_matches_reference"
+  ],
+  "services": "up",
+  "note": "a window that is neither the top hit nor a labelled collision"
+}

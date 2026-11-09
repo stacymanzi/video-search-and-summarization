@@ -1,0 +1,8 @@
+{
+  "passed": false,
+  "fails": [
+    "part1.captions_indexed"
+  ],
+  "services": "up",
+  "note": "the frames setting was not sent: one frame per chunk"
+}

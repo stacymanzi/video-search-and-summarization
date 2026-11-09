@@ -1,0 +1,8 @@
+{
+  "passed": true,
+  "fails": [
+    "part1.kafka_decoded"
+  ],
+  "services": "up",
+  "note": "frame 4 with frame 8's timestamp, 1 s off"
+}

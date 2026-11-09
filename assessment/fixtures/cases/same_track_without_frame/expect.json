@@ -1,0 +1,6 @@
+{
+  "passed": true,
+  "fails": [],
+  "services": "up",
+  "note": "track 9's own id; the grader searches from frame 3 and finds object 21, but the answers do not say which frame the learner used"
+}

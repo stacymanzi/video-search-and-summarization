@@ -1,0 +1,2382 @@
+{
+  "vios": {
+    "sensors": [
+      {
+        "sensorId": "5b0f3c9e-1d2a-4e8b-9c7f-0a1b2c3d4e5f",
+        "name": "rain_check_1"
+      },
+      {
+        "sensorId": "4d3c2b1a-0f9e-4d8c-8b7a-6f5e4d3c2b1a",
+        "name": "traffic_short_1"
+      },
+      {
+        "sensorId": "8e7a6b5c-4d3e-4f2a-9b1c-0d9e8f7a6b5c",
+        "name": "normal_eval_1"
+      },
+      {
+        "sensorId": "2c4e6a8b-1d3f-4a5b-8c7d-9e0f1a2b3c4d",
+        "name": "rain_eval_1"
+      },
+      {
+        "sensorId": "7f1e2d3c-4b5a-4c6d-8e9f-0a1b2c3d4e5f",
+        "name": "fog_eval_1"
+      },
+      {
+        "sensorId": "9a8b7c6d-5e4f-4a3b-9c2d-1e0f9a8b7c6d",
+        "name": "night_eval_1"
+      }
+    ],
+    "timelines": {
+      "5b0f3c9e-1d2a-4e8b-9c7f-0a1b2c3d4e5f": [
+        {
+          "startTime": "2025-01-01T00:00:00.000Z",
+          "endTime": "2025-01-01T00:00:30.000Z"
+        }
+      ],
+      "4d3c2b1a-0f9e-4d8c-8b7a-6f5e4d3c2b1a": [
+        {
+          "startTime": "2025-01-01T00:00:00.000Z",
+          "endTime": "2025-01-01T00:00:16.000Z"
+        }
+      ],
+      "8e7a6b5c-4d3e-4f2a-9b1c-0d9e8f7a6b5c": [
+        {
+          "startTime": "2025-01-02T00:00:00.000Z",
+          "endTime": "2025-01-02T00:03:00.166Z"
+        }
+      ],
+      "2c4e6a8b-1d3f-4a5b-8c7d-9e0f1a2b3c4d": [
+        {
+          "startTime": "2025-01-02T00:00:00.000Z",
+          "endTime": "2025-01-02T00:03:00.250Z"
+        }
+      ],
+      "7f1e2d3c-4b5a-4c6d-8e9f-0a1b2c3d4e5f": [
+        {
+          "startTime": "2025-01-02T00:00:00.000Z",
+          "endTime": "2025-01-02T00:03:00.250Z"
+        }
+      ],
+      "9a8b7c6d-5e4f-4a3b-9c2d-1e0f9a8b7c6d": [
+        {
+          "startTime": "2025-01-02T00:00:00.000Z",
+          "endTime": "2025-01-02T00:03:00.250Z"
+        }
+      ]
+    }
+  },
+  "rtvi_embed": {
+    "model": "cosmos-embed1-448p-anomaly-detection",
+    "text_embeddings": {
+      "two cars collide at a crossing": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "a car drives through heavy rain": [
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "a crash on a wet road": [
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "a collision on a sunny day": [
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0
+      ]
+    }
+  },
+  "es": {
+    "mdx-raw-2025-01-01": [
+      {
+        "version": "4.0",
+        "id": "0",
+        "sensorId": "rain_check",
+        "timestamp": "2025-01-01T00:00:00.000Z",
+        "objects": [
+          {
+            "id": "7",
+            "type": "car",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 100.0,
+              "topY": 200.0,
+              "rightX": 180.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                1.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "version": "4.0",
+        "id": "1",
+        "sensorId": "rain_check",
+        "timestamp": "2025-01-01T00:00:00.250Z",
+        "objects": [
+          {
+            "id": "7",
+            "type": "car",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 110.0,
+              "topY": 200.0,
+              "rightX": 190.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                1.0,
+                0.02,
+                0.0,
+                0.0
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "version": "4.0",
+        "id": "2",
+        "sensorId": "rain_check",
+        "timestamp": "2025-01-01T00:00:00.500Z",
+        "objects": [
+          {
+            "id": "7",
+            "type": "car",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 120.0,
+              "topY": 200.0,
+              "rightX": 200.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                1.0,
+                0.04,
+                0.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "id": "15",
+            "type": "car",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 900.0,
+              "topY": 200.0,
+              "rightX": 980.0,
+              "bottomY": 260.0
+            }
+          }
+        ]
+      },
+      {
+        "version": "4.0",
+        "id": "3",
+        "sensorId": "rain_check",
+        "timestamp": "2025-01-01T00:00:00.750Z",
+        "objects": [
+          {
+            "id": "7",
+            "type": "car",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 130.0,
+              "topY": 200.0,
+              "rightX": 210.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                1.0,
+                0.06,
+                0.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "id": "9",
+            "type": "car",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 400.0,
+              "topY": 200.0,
+              "rightX": 480.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                1.0,
+                0.06,
+                0.0
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "version": "4.0",
+        "id": "4",
+        "sensorId": "rain_check",
+        "timestamp": "2025-01-01T00:00:01.000Z",
+        "objects": [
+          {
+            "id": "7",
+            "type": "car",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 140.0,
+              "topY": 200.0,
+              "rightX": 220.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                1.0,
+                0.08,
+                0.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "id": "9",
+            "type": "car",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 400.0,
+              "topY": 200.0,
+              "rightX": 480.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                1.0,
+                0.08,
+                0.0
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "version": "4.0",
+        "id": "5",
+        "sensorId": "rain_check",
+        "timestamp": "2025-01-01T00:00:01.250Z",
+        "objects": [
+          {
+            "id": "7",
+            "type": "car",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 150.0,
+              "topY": 200.0,
+              "rightX": 230.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                1.0,
+                0.1,
+                0.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "id": "9",
+            "type": "car",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 400.0,
+              "topY": 200.0,
+              "rightX": 480.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                1.0,
+                0.1,
+                0.0
+              ]
+            }
+          },
+          {
+            "id": "12",
+            "type": "person",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 700.0,
+              "topY": 200.0,
+              "rightX": 780.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                1.0,
+                0.1
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "version": "4.0",
+        "id": "6",
+        "sensorId": "rain_check",
+        "timestamp": "2025-01-01T00:00:01.500Z",
+        "objects": [
+          {
+            "id": "7",
+            "type": "car",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 160.0,
+              "topY": 200.0,
+              "rightX": 240.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                1.0,
+                0.12,
+                0.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "id": "9",
+            "type": "car",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 400.0,
+              "topY": 200.0,
+              "rightX": 480.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                1.0,
+                0.12,
+                0.0
+              ]
+            }
+          },
+          {
+            "id": "12",
+            "type": "person",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 700.0,
+              "topY": 200.0,
+              "rightX": 780.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                1.0,
+                0.12
+              ]
+            }
+          },
+          {
+            "id": "21",
+            "type": "car",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 600.0,
+              "topY": 200.0,
+              "rightX": 680.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                1.0,
+                0.06,
+                0.0
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "version": "4.0",
+        "id": "7",
+        "sensorId": "rain_check",
+        "timestamp": "2025-01-01T00:00:01.750Z",
+        "objects": [
+          {
+            "id": "7",
+            "type": "car",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 170.0,
+              "topY": 200.0,
+              "rightX": 250.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                1.0,
+                0.14,
+                0.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "id": "9",
+            "type": "car",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 400.0,
+              "topY": 200.0,
+              "rightX": 480.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                1.0,
+                0.14,
+                0.0
+              ]
+            }
+          },
+          {
+            "id": "12",
+            "type": "person",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 700.0,
+              "topY": 200.0,
+              "rightX": 780.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                1.0,
+                0.14
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "version": "4.0",
+        "id": "8",
+        "sensorId": "rain_check",
+        "timestamp": "2025-01-01T00:00:02.000Z",
+        "objects": [
+          {
+            "id": "7",
+            "type": "car",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 180.0,
+              "topY": 200.0,
+              "rightX": 260.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                1.0,
+                0.16,
+                0.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "id": "9",
+            "type": "car",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 400.0,
+              "topY": 200.0,
+              "rightX": 480.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                1.0,
+                0.16,
+                0.0
+              ]
+            }
+          },
+          {
+            "id": "12",
+            "type": "person",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 700.0,
+              "topY": 200.0,
+              "rightX": 780.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                1.0,
+                0.16
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "version": "4.0",
+        "id": "9",
+        "sensorId": "rain_check",
+        "timestamp": "2025-01-01T00:00:02.250Z",
+        "objects": [
+          {
+            "id": "7",
+            "type": "car",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 190.0,
+              "topY": 200.0,
+              "rightX": 270.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                1.0,
+                0.18,
+                0.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "id": "9",
+            "type": "car",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 400.0,
+              "topY": 200.0,
+              "rightX": 480.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                1.0,
+                0.18,
+                0.0
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "version": "4.0",
+        "id": "10",
+        "sensorId": "rain_check",
+        "timestamp": "2025-01-01T00:00:02.500Z",
+        "objects": [
+          {
+            "id": "7",
+            "type": "car",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 200.0,
+              "topY": 200.0,
+              "rightX": 280.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                1.0,
+                0.2,
+                0.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "id": "9",
+            "type": "car",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 400.0,
+              "topY": 200.0,
+              "rightX": 480.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                1.0,
+                0.2,
+                0.0
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "version": "4.0",
+        "id": "11",
+        "sensorId": "rain_check",
+        "timestamp": "2025-01-01T00:00:02.750Z",
+        "objects": [
+          {
+            "id": "7",
+            "type": "car",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 210.0,
+              "topY": 200.0,
+              "rightX": 290.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                1.0,
+                0.22,
+                0.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "id": "9",
+            "type": "car",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 400.0,
+              "topY": 200.0,
+              "rightX": 480.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                1.0,
+                0.22,
+                0.0
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "version": "4.0",
+        "id": "0",
+        "sensorId": "normal_eval",
+        "timestamp": "2025-01-01T00:00:00.600Z",
+        "objects": [
+          {
+            "id": "100",
+            "type": "bicycle",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 0.0,
+              "topY": 200.0,
+              "rightX": 80.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ]
+            }
+          },
+          {
+            "id": "101",
+            "type": "bicycle",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 50.0,
+              "topY": 200.0,
+              "rightX": 130.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ]
+            }
+          },
+          {
+            "id": "102",
+            "type": "bicycle",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 100.0,
+              "topY": 200.0,
+              "rightX": 180.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ]
+            }
+          },
+          {
+            "id": "103",
+            "type": "bicycle",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 150.0,
+              "topY": 200.0,
+              "rightX": 230.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ]
+            }
+          },
+          {
+            "id": "104",
+            "type": "bicycle",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 200.0,
+              "topY": 200.0,
+              "rightX": 280.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ]
+            }
+          },
+          {
+            "id": "105",
+            "type": "bicycle",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 250.0,
+              "topY": 200.0,
+              "rightX": 330.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ]
+            }
+          },
+          {
+            "id": "106",
+            "type": "bicycle",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 300.0,
+              "topY": 200.0,
+              "rightX": 380.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ]
+            }
+          },
+          {
+            "id": "107",
+            "type": "bicycle",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 350.0,
+              "topY": 200.0,
+              "rightX": 430.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ]
+            }
+          },
+          {
+            "id": "108",
+            "type": "bicycle",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 400.0,
+              "topY": 200.0,
+              "rightX": 480.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ]
+            }
+          },
+          {
+            "id": "109",
+            "type": "bicycle",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 450.0,
+              "topY": 200.0,
+              "rightX": 530.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ]
+            }
+          },
+          {
+            "id": "1",
+            "type": "car",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 800.0,
+              "topY": 200.0,
+              "rightX": 880.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                1.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "version": "4.0",
+        "id": "1",
+        "sensorId": "normal_eval",
+        "timestamp": "2025-01-01T00:00:00.850Z",
+        "objects": [
+          {
+            "id": "100",
+            "type": "bicycle",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 0.0,
+              "topY": 200.0,
+              "rightX": 80.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ]
+            }
+          },
+          {
+            "id": "101",
+            "type": "bicycle",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 50.0,
+              "topY": 200.0,
+              "rightX": 130.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ]
+            }
+          },
+          {
+            "id": "102",
+            "type": "bicycle",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 100.0,
+              "topY": 200.0,
+              "rightX": 180.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ]
+            }
+          },
+          {
+            "id": "103",
+            "type": "bicycle",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 150.0,
+              "topY": 200.0,
+              "rightX": 230.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ]
+            }
+          },
+          {
+            "id": "104",
+            "type": "bicycle",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 200.0,
+              "topY": 200.0,
+              "rightX": 280.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ]
+            }
+          },
+          {
+            "id": "105",
+            "type": "bicycle",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 250.0,
+              "topY": 200.0,
+              "rightX": 330.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ]
+            }
+          },
+          {
+            "id": "106",
+            "type": "bicycle",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 300.0,
+              "topY": 200.0,
+              "rightX": 380.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ]
+            }
+          },
+          {
+            "id": "107",
+            "type": "bicycle",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 350.0,
+              "topY": 200.0,
+              "rightX": 430.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ]
+            }
+          },
+          {
+            "id": "108",
+            "type": "bicycle",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 400.0,
+              "topY": 200.0,
+              "rightX": 480.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ]
+            }
+          },
+          {
+            "id": "109",
+            "type": "bicycle",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 450.0,
+              "topY": 200.0,
+              "rightX": 530.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ]
+            }
+          },
+          {
+            "id": "1",
+            "type": "car",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 800.0,
+              "topY": 200.0,
+              "rightX": 880.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                1.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "version": "4.0",
+        "id": "2",
+        "sensorId": "normal_eval",
+        "timestamp": "2025-01-01T00:00:01.100Z",
+        "objects": [
+          {
+            "id": "100",
+            "type": "bicycle",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 0.0,
+              "topY": 200.0,
+              "rightX": 80.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ]
+            }
+          },
+          {
+            "id": "101",
+            "type": "bicycle",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 50.0,
+              "topY": 200.0,
+              "rightX": 130.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ]
+            }
+          },
+          {
+            "id": "102",
+            "type": "bicycle",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 100.0,
+              "topY": 200.0,
+              "rightX": 180.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ]
+            }
+          },
+          {
+            "id": "103",
+            "type": "bicycle",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 150.0,
+              "topY": 200.0,
+              "rightX": 230.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ]
+            }
+          },
+          {
+            "id": "104",
+            "type": "bicycle",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 200.0,
+              "topY": 200.0,
+              "rightX": 280.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ]
+            }
+          },
+          {
+            "id": "105",
+            "type": "bicycle",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 250.0,
+              "topY": 200.0,
+              "rightX": 330.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ]
+            }
+          },
+          {
+            "id": "106",
+            "type": "bicycle",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 300.0,
+              "topY": 200.0,
+              "rightX": 380.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ]
+            }
+          },
+          {
+            "id": "107",
+            "type": "bicycle",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 350.0,
+              "topY": 200.0,
+              "rightX": 430.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ]
+            }
+          },
+          {
+            "id": "108",
+            "type": "bicycle",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 400.0,
+              "topY": 200.0,
+              "rightX": 480.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ]
+            }
+          },
+          {
+            "id": "109",
+            "type": "bicycle",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 450.0,
+              "topY": 200.0,
+              "rightX": 530.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ]
+            }
+          },
+          {
+            "id": "1",
+            "type": "car",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 800.0,
+              "topY": 200.0,
+              "rightX": 880.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                1.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "version": "4.0",
+        "id": "0",
+        "sensorId": "rain_checkpoint",
+        "timestamp": "2025-01-01T00:00:00.600Z",
+        "objects": [
+          {
+            "id": "200",
+            "type": "person",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 0.0,
+              "topY": 200.0,
+              "rightX": 80.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                1.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "id": "201",
+            "type": "person",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 50.0,
+              "topY": 200.0,
+              "rightX": 130.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                1.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "id": "202",
+            "type": "person",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 100.0,
+              "topY": 200.0,
+              "rightX": 180.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                1.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "id": "203",
+            "type": "person",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 150.0,
+              "topY": 200.0,
+              "rightX": 230.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                1.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "id": "204",
+            "type": "person",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 200.0,
+              "topY": 200.0,
+              "rightX": 280.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                1.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "id": "205",
+            "type": "person",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 250.0,
+              "topY": 200.0,
+              "rightX": 330.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                1.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "id": "206",
+            "type": "person",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 300.0,
+              "topY": 200.0,
+              "rightX": 380.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                1.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "id": "207",
+            "type": "person",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 350.0,
+              "topY": 200.0,
+              "rightX": 430.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                1.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "id": "208",
+            "type": "person",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 400.0,
+              "topY": 200.0,
+              "rightX": 480.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                1.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "id": "209",
+            "type": "person",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 450.0,
+              "topY": 200.0,
+              "rightX": 530.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                1.0,
+                0.0
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "version": "4.0",
+        "id": "1",
+        "sensorId": "rain_checkpoint",
+        "timestamp": "2025-01-01T00:00:00.850Z",
+        "objects": [
+          {
+            "id": "200",
+            "type": "person",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 0.0,
+              "topY": 200.0,
+              "rightX": 80.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                1.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "id": "201",
+            "type": "person",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 50.0,
+              "topY": 200.0,
+              "rightX": 130.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                1.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "id": "202",
+            "type": "person",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 100.0,
+              "topY": 200.0,
+              "rightX": 180.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                1.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "id": "203",
+            "type": "person",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 150.0,
+              "topY": 200.0,
+              "rightX": 230.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                1.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "id": "204",
+            "type": "person",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 200.0,
+              "topY": 200.0,
+              "rightX": 280.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                1.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "id": "205",
+            "type": "person",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 250.0,
+              "topY": 200.0,
+              "rightX": 330.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                1.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "id": "206",
+            "type": "person",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 300.0,
+              "topY": 200.0,
+              "rightX": 380.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                1.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "id": "207",
+            "type": "person",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 350.0,
+              "topY": 200.0,
+              "rightX": 430.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                1.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "id": "208",
+            "type": "person",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 400.0,
+              "topY": 200.0,
+              "rightX": 480.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                1.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "id": "209",
+            "type": "person",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 450.0,
+              "topY": 200.0,
+              "rightX": 530.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                1.0,
+                0.0
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "version": "4.0",
+        "id": "2",
+        "sensorId": "rain_checkpoint",
+        "timestamp": "2025-01-01T00:00:01.100Z",
+        "objects": [
+          {
+            "id": "200",
+            "type": "person",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 0.0,
+              "topY": 200.0,
+              "rightX": 80.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                1.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "id": "201",
+            "type": "person",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 50.0,
+              "topY": 200.0,
+              "rightX": 130.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                1.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "id": "202",
+            "type": "person",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 100.0,
+              "topY": 200.0,
+              "rightX": 180.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                1.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "id": "203",
+            "type": "person",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 150.0,
+              "topY": 200.0,
+              "rightX": 230.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                1.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "id": "204",
+            "type": "person",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 200.0,
+              "topY": 200.0,
+              "rightX": 280.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                1.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "id": "205",
+            "type": "person",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 250.0,
+              "topY": 200.0,
+              "rightX": 330.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                1.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "id": "206",
+            "type": "person",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 300.0,
+              "topY": 200.0,
+              "rightX": 380.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                1.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "id": "207",
+            "type": "person",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 350.0,
+              "topY": 200.0,
+              "rightX": 430.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                1.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "id": "208",
+            "type": "person",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 400.0,
+              "topY": 200.0,
+              "rightX": 480.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                1.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "id": "209",
+            "type": "person",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 450.0,
+              "topY": 200.0,
+              "rightX": 530.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                1.0,
+                0.0
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "version": "4.0",
+        "id": "3",
+        "sensorId": "rain_checkpoint",
+        "timestamp": "2025-01-01T00:00:01.350Z",
+        "objects": [
+          {
+            "id": "200",
+            "type": "person",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 0.0,
+              "topY": 200.0,
+              "rightX": 80.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                1.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "id": "201",
+            "type": "person",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 50.0,
+              "topY": 200.0,
+              "rightX": 130.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                1.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "id": "202",
+            "type": "person",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 100.0,
+              "topY": 200.0,
+              "rightX": 180.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                1.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "id": "203",
+            "type": "person",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 150.0,
+              "topY": 200.0,
+              "rightX": 230.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                1.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "id": "204",
+            "type": "person",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 200.0,
+              "topY": 200.0,
+              "rightX": 280.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                1.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "id": "205",
+            "type": "person",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 250.0,
+              "topY": 200.0,
+              "rightX": 330.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                1.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "id": "206",
+            "type": "person",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 300.0,
+              "topY": 200.0,
+              "rightX": 380.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                1.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "id": "207",
+            "type": "person",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 350.0,
+              "topY": 200.0,
+              "rightX": 430.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                1.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "id": "208",
+            "type": "person",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 400.0,
+              "topY": 200.0,
+              "rightX": 480.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                1.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "id": "209",
+            "type": "person",
+            "confidence": 0.9,
+            "bbox": {
+              "leftX": 450.0,
+              "topY": 200.0,
+              "rightX": 530.0,
+              "bottomY": 260.0
+            },
+            "embedding": {
+              "vector": [
+                0.0,
+                0.0,
+                1.0,
+                0.0
+              ]
+            }
+          }
+        ]
+      }
+    ],
+    "mdx-embed-filtered-2025-01-01": [
+      {
+        "sensor": {
+          "id": "4d3c2b1a-0f9e-4d8c-8b7a-6f5e4d3c2b1a"
+        },
+        "timestamp": "2025-01-01T00:00:00.000Z",
+        "end": "2025-01-01T00:00:05.000Z",
+        "llm": {
+          "visionEmbeddings": [
+            {
+              "vector": [
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "sensor": {
+          "id": "5b0f3c9e-1d2a-4e8b-9c7f-0a1b2c3d4e5f"
+        },
+        "timestamp": "2025-01-01T00:00:05.000Z",
+        "end": "2025-01-01T00:00:10.000Z",
+        "llm": {
+          "visionEmbeddings": [
+            {
+              "vector": [
+                0.99,
+                0.0,
+                0.0,
+                0.0,
+                0.14,
+                0.0
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "sensor": {
+          "id": "2c4e6a8b-1d3f-4a5b-8c7d-9e0f1a2b3c4d"
+        },
+        "timestamp": "2025-01-01T00:00:15.000Z",
+        "end": "2025-01-01T00:00:20.000Z",
+        "llm": {
+          "visionEmbeddings": [
+            {
+              "vector": [
+                0.5,
+                0.0,
+                0.86,
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "sensor": {
+          "id": "2c4e6a8b-1d3f-4a5b-8c7d-9e0f1a2b3c4d"
+        },
+        "timestamp": "2025-01-01T00:00:20.000Z",
+        "end": "2025-01-01T00:00:25.000Z",
+        "llm": {
+          "visionEmbeddings": [
+            {
+              "vector": [
+                0.95,
+                0.05,
+                0.05,
+                0.0,
+                0.3,
+                0.0
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "sensor": {
+          "id": "2c4e6a8b-1d3f-4a5b-8c7d-9e0f1a2b3c4d"
+        },
+        "timestamp": "2025-01-01T00:00:55.000Z",
+        "end": "2025-01-01T00:01:00.000Z",
+        "llm": {
+          "visionEmbeddings": [
+            {
+              "vector": [
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "sensor": {
+          "id": "8e7a6b5c-4d3e-4f2a-9b1c-0d9e8f7a6b5c"
+        },
+        "timestamp": "2025-01-01T00:00:45.000Z",
+        "end": "2025-01-01T00:00:50.000Z",
+        "llm": {
+          "visionEmbeddings": [
+            {
+              "vector": [
+                0.8,
+                0.0,
+                0.0,
+                0.6,
+                0.0,
+                0.0
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "sensor": {
+          "id": "7f1e2d3c-4b5a-4c6d-8e9f-0a1b2c3d4e5f"
+        },
+        "timestamp": "2025-01-01T00:00:30.000Z",
+        "end": "2025-01-01T00:00:35.000Z",
+        "llm": {
+          "visionEmbeddings": [
+            {
+              "vector": [
+                0.3,
+                0.3,
+                0.3,
+                0.3,
+                0.0,
+                0.8
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "sensor": {
+          "id": "9a8b7c6d-5e4f-4a3b-9c2d-1e0f9a8b7c6d"
+        },
+        "timestamp": "2025-01-01T00:01:20.000Z",
+        "end": "2025-01-01T00:01:25.000Z",
+        "llm": {
+          "visionEmbeddings": [
+            {
+              "vector": [
+                0.4,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.9
+              ]
+            }
+          ]
+        }
+      }
+    ],
+    "default_3f2a6c1e_8b4d_4f1a_9e2b_7c5d4a3b2e1f": [
+      {
+        "text": "Chunk 0: cars drive through a wet intersection.",
+        "metadata": {
+          "source": "N/A",
+          "content_metadata": {
+            "chunkIdx": 0
+          }
+        }
+      },
+      {
+        "text": "Chunk 1: cars drive through a wet intersection.",
+        "metadata": {
+          "source": "N/A",
+          "content_metadata": {
+            "chunkIdx": 1
+          }
+        }
+      },
+      {
+        "text": "Chunk 2: cars drive through a wet intersection.",
+        "metadata": {
+          "source": "N/A",
+          "content_metadata": {
+            "chunkIdx": 2
+          }
+        }
+      }
+    ]
+  },
+  "registry": {
+    "normal_eval.mp4": {
+      "filename": "normal_eval.mp4",
+      "duration_seconds": 180.166667,
+      "creation_time": "2025-01-02T00:00:00.000Z",
+      "sensor_id": "8e7a6b5c-4d3e-4f2a-9b1c-0d9e8f7a6b5c",
+      "completed": true
+    },
+    "rain_eval.mp4": {
+      "filename": "rain_eval.mp4",
+      "duration_seconds": 180.25,
+      "creation_time": "2025-01-02T00:00:00.000Z",
+      "sensor_id": "2c4e6a8b-1d3f-4a5b-8c7d-9e0f1a2b3c4d",
+      "completed": true
+    },
+    "fog_eval.mp4": {
+      "filename": "fog_eval.mp4",
+      "duration_seconds": 180.25,
+      "creation_time": "2025-01-02T00:00:00.000Z",
+      "sensor_id": "7f1e2d3c-4b5a-4c6d-8e9f-0a1b2c3d4e5f",
+      "completed": true
+    },
+    "night_eval.mp4": {
+      "filename": "night_eval.mp4",
+      "duration_seconds": 180.25,
+      "creation_time": "2025-01-02T00:00:00.000Z",
+      "sensor_id": "9a8b7c6d-5e4f-4a3b-9c2d-1e0f9a8b7c6d",
+      "completed": true
+    }
+  }
+}

@@ -1,0 +1,9 @@
+{
+    // Document Manager
+    // @jupyterlab/docmanager-extension:plugin
+    // A link to a .md file (START_HERE.md, for example) opens rendered, not
+    // as raw text in the editor.
+    "defaultViewers": {
+        "markdown": "Markdown Preview"
+    }
+}

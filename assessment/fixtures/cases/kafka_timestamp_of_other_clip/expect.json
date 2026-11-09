@@ -1,0 +1,8 @@
+{
+  "passed": true,
+  "fails": [
+    "part1.kafka_decoded"
+  ],
+  "services": "up",
+  "note": "frame 2 of normal_eval is at 1.1 s; rain_check's frame 2 is at 0.5 s"
+}
