@@ -31,12 +31,18 @@ fi
 # ---------------------------------------------------------------------------
 # 2. Write the NGC key into .env-dev (gitignored; consumed only by vss-deploy)
 # ---------------------------------------------------------------------------
-if [[ -z "${NGC_API_KEY:-}" ]]; then
-    echo "[setup] ERROR: NGC_API_KEY is not set. Add it as a Brev environment variable." >&2
+if [[ -f "$TASK1/.env-dev" ]]; then
+    echo "[setup] Using existing task1/.env-dev"
+elif [[ -n "${NGC_API_KEY:-}" ]]; then
+    printf 'NGC_API_KEY=%s\n' "$NGC_API_KEY" > "$TASK1/.env-dev"
+    echo "[setup] Wrote NGC_API_KEY to task1/.env-dev"
+else
+    echo "[setup] ERROR: NGC_API_KEY is not set and task1/.env-dev does not exist." >&2
+    echo "[setup] Either:" >&2
+    echo "[setup]   export NGC_API_KEY=nvapi-... && bash setup.sh" >&2
+    echo "[setup]   echo 'NGC_API_KEY=nvapi-...' > $TASK1/.env-dev && bash setup.sh" >&2
     exit 1
 fi
-printf 'NGC_API_KEY=%s\n' "$NGC_API_KEY" > "$TASK1/.env-dev"
-echo "[setup] Wrote NGC_API_KEY to task1/.env-dev"
 
 # ---------------------------------------------------------------------------
 # 3. Verify pre-staged assets exist before spending 60+ min on a deploy
