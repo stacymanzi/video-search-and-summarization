@@ -1,8 +1,15 @@
-# VSS Foundations: Part 1 DLI Lab
+# VSS Foundations
 
-Part 1 of the NVIDIA DLI course "Build and Evaluate a Visual AI Agent". Learners use the VSS 3.2.1
-building blocks one at a time: RT-CV (detection and tracking), RT-VLM (captioning and prompting),
-and RT-Embed (video search). The stack is pre-deployed at launch; learners never deploy.
+Learn how to build a Visual AI Agent using NVIDIA Video Search and Summarization (VSS). This lab
+walks you through the core VSS building blocks hands-on: detecting and tracking objects in video,
+generating natural language captions from a vision-language model, and searching across a video
+collection using semantic embeddings.
+
+You work against a fully deployed VSS 3.2.1 stack running on your instance. Each notebook
+introduces one component, shows you what it does, and gives you exercises to try it yourself.
+By the end you will have searched a library of traffic videos by meaning, prompted a reasoning
+model to describe events frame by frame, and built a mental model of how the pieces fit together
+into a production visual AI pipeline.
 
 ## What runs
 
