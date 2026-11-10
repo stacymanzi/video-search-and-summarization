@@ -23,3 +23,7 @@ task/workspaces
 # assessment's answers and clip, the coding agent's files (work/agent/).
 lab/task/work/
 .pytest_cache/
+
+# Root-owned leftover from old vss-smart-cities lab containers; cannot delete
+# without sudo, hidden here so it stays out of git status.
+lab-2-sdg/
