@@ -56,6 +56,11 @@ services:
       - COURSE_RTVI_VLM_BASE_URL=http://host.docker.internal:${VSS_RT_VLM_PORT:-8018}
       - COURSE_AGENT_BASE_URL=http://host.docker.internal:8000
       - JUPYTER_TOKEN
+      # On Brev the platform provides a "dind" hostname whose IPv4 address
+      # becomes HOST_IP (used by notebooks to reach VSS APIs). On a devbox
+      # there is no dind service; host.docker.internal (host-gateway) works
+      # the same way since VSS services listen on 0.0.0.0.
+      - DLI_DIND_HOSTNAME=${DLI_DIND_HOSTNAME:-host.docker.internal}
 
   # One-shot: waits for VSS health, ingests the four search clips through
   # http://nginx/agent/..., writes search_sources.json and course_prep_status.json.

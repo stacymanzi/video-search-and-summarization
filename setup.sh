@@ -28,6 +28,13 @@ export COMPOSE_BAKE=false
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ASSETS_DIR="${BREV_ASSETS_DIR:-/home/ubuntu/course-assets}"
 
+# Derive the compose volume name from COMPOSE_PROJECT_NAME so the volume we
+# pre-populate in step 4 matches the one compose mounts (c-fx-17-v2-task1_course_data).
+_cpn=$(grep '^COMPOSE_PROJECT_NAME=' "$REPO_DIR/.env" 2>/dev/null \
+    | head -1 | cut -d= -f2- | tr -d '[:space:]' || true)
+COURSE_DATA_VOLUME="${_cpn:+${_cpn}_}course_data"
+unset _cpn
+
 log()  { echo "[setup] $*"; }
 fail() { echo "[setup] FATAL: $*" >&2; exit 1; }
 
@@ -155,12 +162,12 @@ for rel in "${REQUIRED_VIDEOS[@]}"; do
         fail "Missing required asset: $ASSETS_DIR/$rel\nUpload course assets to $ASSETS_DIR before running setup."
 done
 
-log "copying videos into course_data volume"
-docker volume create course_data 2>/dev/null || true
+log "copying videos into course_data volume ($COURSE_DATA_VOLUME)"
+docker volume create "$COURSE_DATA_VOLUME" 2>/dev/null || true
 # Use a one-shot container so volume permissions are correct.
 docker run --rm \
     -v "$ASSETS_DIR:/brev-assets:ro" \
-    -v course_data:/data \
+    -v "${COURSE_DATA_VOLUME}:/data" \
     -v "$REPO_DIR/assessment/grader/answer_keys/ground_truth:/gt:ro" \
     python:3.11-slim python3 -c "
 import shutil, os, json, tempfile
@@ -467,6 +474,25 @@ DOWNLOAD
     sed -i "$((marker_line - 1))r ${block}" "$init_script"
     rm -f "$block"
     log "inserted TrafficCamNet download into $(basename "$init_script") (before line $marker_line)"
+
+    # On a devbox another service (e.g. MinIO) may already hold port 9000, which
+    # DeepStream's CivetWeb REST server uses. Detect the conflict and change to
+    # 9002. On a fresh Brev instance port 9000 is always free; this is a no-op.
+    local cv_port=9000
+    if cat /proc/net/tcp /proc/net/tcp6 2>/dev/null \
+            | awk -v p="$(printf '%04X' $cv_port)" '$2 ~ /:'"$(printf '%04X' $cv_port)"'$/ || $2 ~ /^[0-9A-Fa-f]*:'"$(printf '%04X' $cv_port)"'$/ {found=1} END {exit !found}'; then
+        local alt_port=9002
+        log "port $cv_port is in use on this host; switching RTVI_CV_PORT to $alt_port to avoid DeepStream REST conflict"
+        local ds_cfg="$app/deepstream/configs"
+        sed -i "s/^http-port=${cv_port}$/http-port=${alt_port}/" \
+            "$ds_cfg/ds-main-config.txt" \
+            "$ds_cfg/ds-main-redis-config.txt" 2>/dev/null || true
+        sed -i "s|\"provisioning_address\": \"localhost:${cv_port}\"|\"provisioning_address\": \"localhost:${alt_port}\"|g" \
+            "$app/sdr/docker_cluster_config.json" 2>/dev/null || true
+        local env_file="$SRC/deploy/docker/developer-profiles/dev-profile-${VSS_PROFILE}/.env"
+        sed -i "s/^RTVI_CV_PORT=${cv_port}$/RTVI_CV_PORT=${alt_port}/" "$env_file" 2>/dev/null || true
+        log "patched DS REST port ${cv_port}→${alt_port} in configs and .env"
+    fi
 }
 patch_rt_cv_to_trafficcamnet
 
@@ -500,6 +526,16 @@ if [[ "${VSS_FORCE_REDEPLOY:-false}" != "true" ]]; then
 fi
 
 if [[ "${goto_course_services:-false}" != "true" ]]; then
+    # Remove any stopped containers whose names would conflict with the new mdx deployment.
+    # On a fresh Brev instance there are none. On a devbox, old `vss`-project containers
+    # from a previous deploy linger and cause "container name already in use" errors.
+    old_vss=$(docker ps -aq --filter "label=com.docker.compose.project=vss" 2>/dev/null || true)
+    if [[ -n "$old_vss" ]]; then
+        log "removing old 'vss'-project containers to avoid name conflicts"
+        # shellcheck disable=SC2086
+        docker rm -f $old_vss 2>/dev/null || true
+    fi
+
     cd "$SRC/deploy/docker"
     UP_ATTEMPTS=3
     UP_RETRY_DELAY_S=90
@@ -508,6 +544,7 @@ if [[ "${goto_course_services:-false}" != "true" ]]; then
     UP_RETRY_RE+='|dial tcp|no such host|Temporary failure in name resolution|context deadline exceeded'
     UP_RETRY_RE+='|toomanyrequests|Service Unavailable|Bad Gateway|Gateway Time-?out'
     UP_RETRY_RE+='|received unexpected HTTP status: 5[0-9][0-9]'
+    UP_RETRY_RE+='|container name.*is already in use'
     LOG=/tmp/dev-profile.log
 
     status "RUNNING: dev-profile.sh up (images: ~93 GB; engines: 15-20 min; allow 60-90 min total)"
@@ -521,15 +558,18 @@ if [[ "${goto_course_services:-false}" != "true" ]]; then
         up_error=""
         [[ "$rc" -ne 0 ]] && up_error="dev-profile.sh up exited $rc"
         [[ -n "$up_error" ]] || break
-        log "$up_error; checking for containers..."
-        created=$(docker ps -aq 2>/dev/null | wc -l | tr -d ' ')
-        if [[ "$created" -gt 0 ]]; then
-            fail "$up_error and $created container(s) exist; not retrying a blind tear-down.
-  Inspect with: docker ps -a; docker logs <name>
-  Rebuild with: VSS_FORCE_REDEPLOY=true bash $REPO_DIR/setup.sh"
-        fi
+        log "$up_error; checking log for retryable error..."
         if ! grep -qE "$UP_RETRY_RE" "$LOG"; then
-            fail "$up_error with no pull/network error in log; a retry would not help. See $LOG"
+            created=$(docker ps -aq 2>/dev/null | wc -l | tr -d ' ')
+            fail "$up_error with no retryable error in log ($created container(s) exist).
+  Inspect with: docker ps -a; docker logs <name>
+  Rebuild with: VSS_FORCE_REDEPLOY=true bash $REPO_DIR/setup.sh
+  See: $LOG"
+        fi
+        if grep -qE 'container name.*is already in use' "$LOG"; then
+            log "container name conflict detected; removing conflicting stopped containers before retry"
+            docker ps -aq --filter "status=exited" --filter "label=com.docker.compose.project=vss" | xargs -r docker rm -f 2>/dev/null || true
+            docker ps -aq --filter "status=created" | xargs -r docker rm -f 2>/dev/null || true
         fi
         [[ "$attempt" -lt "$UP_ATTEMPTS" ]] || \
             fail "$up_error on all $UP_ATTEMPTS attempts; registry errors above in $LOG"
@@ -550,31 +590,67 @@ if [[ "${goto_course_services:-false}" != "true" ]]; then
             's/^(NGC_CLI_API_KEY|NGC_API_KEY|NVIDIA_API_KEY|OPENAI_API_KEY)=.*/\1=<redacted-by-setup>/' \
             "$GEN_ENV"
         log "scrubbed credentials from generated.env"
+
+        # dev-profile.sh writes VSS_PUBLIC_PORT=${HAPROXY_PORT} (7777) in
+        # generated.env. The course expects the STUDENT-FACING port (80, the
+        # nginx reverse proxy), so override it here. This makes VST_EXTERNAL_URL
+        # and VSS_AGENT_EXTERNAL_URL resolve to :80 URLs instead of :7777.
+        sed -i 's/^VSS_PUBLIC_PORT=.*/VSS_PUBLIC_PORT=80/' "$GEN_ENV"
+        log "set VSS_PUBLIC_PORT=80 in generated.env (overrides haproxy-internal port)"
     fi
 fi
 
 # ---------------------------------------------------------------------------
 # 8. Wait for VSS readiness
+#    wait-for-vss.sh was removed in v3.2.1; we poll vss-agent directly.
 # ---------------------------------------------------------------------------
 status "RUNNING: waiting for VSS readiness (up to ${VSS_READY_TIMEOUT_S}s)"
 log "waiting for VSS stack (first run builds TensorRT engines: allow 15-20 min after images are pulled)"
-export VSS_HOST=localhost
-export VSS_READY_TIMEOUT_S
-bash "$SRC/deploy/wait-for-vss.sh"
+_vss_deadline=$(( $(date +%s) + VSS_READY_TIMEOUT_S ))
+_vss_ready=false
+while [[ $(date +%s) -lt $_vss_deadline ]]; do
+    _h=$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{end}}' vss-agent 2>/dev/null || true)
+    if [[ "$_h" == "healthy" ]]; then
+        # Confirm the HTTP health endpoint also responds.
+        if curl -sf --max-time 5 "http://localhost:8000/health" >/dev/null 2>&1; then
+            _vss_ready=true
+            break
+        fi
+    fi
+    # Progress: print container health summary every 60 s.
+    if (( $(date +%s) % 60 < 10 )); then
+        log "  vss-agent health: ${_h:-not_started}; waiting..."
+    fi
+    sleep 10
+done
+[[ "$_vss_ready" == "true" ]] || \
+    fail "VSS stack did not become healthy within ${VSS_READY_TIMEOUT_S}s.
+  Check container logs: docker logs vss-agent
+  Retry with:         VSS_FORCE_REDEPLOY=true bash $REPO_DIR/setup.sh"
 log "VSS stack is ready"
 
 # ---------------------------------------------------------------------------
 # 9. Launch the 4 course services
 # ---------------------------------------------------------------------------
 cd "$REPO_DIR"
+
+# Auto-detect port 80 conflict; devboxes often have another service there.
+# On a fresh Brev instance port 80 is always free and this block is a no-op.
+if cat /proc/net/tcp 2>/dev/null | awk '$2 ~ /00000000:0050/ {found=1} END {exit !found}'; then
+    DEV_NGINX_PORT=${DEV_NGINX_PORT:-18000}
+    export DEV_NGINX_PORT
+    log "port 80 is already in use on this host; using DEV_NGINX_PORT=${DEV_NGINX_PORT} for nginx"
+fi
+
 log "starting course services (lab, course-prep, assessment, nginx)..."
 docker compose -f docker-compose.yml -f docker-compose.override.yml build
 docker compose -f docker-compose.yml -f docker-compose.override.yml up -d
 
 HOST_IP_DISPLAY=$(hostname -I | awk '{print $1}')
+NGINX_PORT_DISPLAY=${DEV_NGINX_PORT:-80}
 log ""
 log "Stack is up!"
-log "  JupyterLab: http://${HOST_IP_DISPLAY}/lab"
+log "  JupyterLab: http://${HOST_IP_DISPLAY}${NGINX_PORT_DISPLAY:+:${NGINX_PORT_DISPLAY}}/lab"
 log "  Watch course-prep:"
 log "    docker compose -f $REPO_DIR/docker-compose.yml -f $REPO_DIR/docker-compose.override.yml logs -f course-prep"
 log "  VSS seed log: cat $SEED_STATUS_DIR/seed.log"
