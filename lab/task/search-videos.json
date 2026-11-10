@@ -1,22 +1,22 @@
 [
   {
     "filename": "normal_eval.mp4",
-    "duration_seconds": 24.542,
+    "duration_seconds": 180.166667,
     "creation_time": "2025-01-02T00:00:00.000Z"
   },
   {
     "filename": "rain_eval.mp4",
-    "duration_seconds": 24.542,
+    "duration_seconds": 180.25,
     "creation_time": "2025-01-02T00:00:00.000Z"
   },
   {
     "filename": "fog_eval.mp4",
-    "duration_seconds": 24.417,
+    "duration_seconds": 180.25,
     "creation_time": "2025-01-02T00:00:00.000Z"
   },
   {
     "filename": "night_eval.mp4",
-    "duration_seconds": 24.417,
+    "duration_seconds": 180.25,
     "creation_time": "2025-01-02T00:00:00.000Z"
   }
 ]
