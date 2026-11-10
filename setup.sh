@@ -475,24 +475,21 @@ DOWNLOAD
     rm -f "$block"
     log "inserted TrafficCamNet download into $(basename "$init_script") (before line $marker_line)"
 
-    # On a devbox another service (e.g. MinIO) may already hold port 9000, which
-    # DeepStream's CivetWeb REST server uses. Detect the conflict and change to
-    # 9002. On a fresh Brev instance port 9000 is always free; this is a no-op.
+    # VSS MinIO always binds port 9000 on the host (network_mode: host). DeepStream's
+    # CivetWeb REST server defaults to port 9000 too — an unconditional conflict.
+    # Always patch RT-CV to port 9002 so the two services never collide.
     local cv_port=9000
-    if cat /proc/net/tcp /proc/net/tcp6 2>/dev/null \
-            | awk -v p="$(printf '%04X' $cv_port)" '$2 ~ /:'"$(printf '%04X' $cv_port)"'$/ || $2 ~ /^[0-9A-Fa-f]*:'"$(printf '%04X' $cv_port)"'$/ {found=1} END {exit !found}'; then
-        local alt_port=9002
-        log "port $cv_port is in use on this host; switching RTVI_CV_PORT to $alt_port to avoid DeepStream REST conflict"
-        local ds_cfg="$app/deepstream/configs"
-        sed -i "s/^http-port=${cv_port}$/http-port=${alt_port}/" \
-            "$ds_cfg/ds-main-config.txt" \
-            "$ds_cfg/ds-main-redis-config.txt" 2>/dev/null || true
-        sed -i "s|\"provisioning_address\": \"localhost:${cv_port}\"|\"provisioning_address\": \"localhost:${alt_port}\"|g" \
-            "$app/sdr/docker_cluster_config.json" 2>/dev/null || true
-        local env_file="$SRC/deploy/docker/developer-profiles/dev-profile-${VSS_PROFILE}/.env"
-        sed -i "s/^RTVI_CV_PORT=${cv_port}$/RTVI_CV_PORT=${alt_port}/" "$env_file" 2>/dev/null || true
-        log "patched DS REST port ${cv_port}→${alt_port} in configs and .env"
-    fi
+    local alt_port=9002
+    log "switching DeepStream REST port ${cv_port}→${alt_port} (VSS MinIO always holds ${cv_port})"
+    local ds_cfg="$app/deepstream/configs"
+    sed -i "s/^http-port=${cv_port}$/http-port=${alt_port}/" \
+        "$ds_cfg/ds-main-config.txt" \
+        "$ds_cfg/ds-main-redis-config.txt" 2>/dev/null || true
+    sed -i "s|\"provisioning_address\": \"localhost:${cv_port}\"|\"provisioning_address\": \"localhost:${alt_port}\"|g" \
+        "$app/sdr/docker_cluster_config.json" 2>/dev/null || true
+    local env_file="$SRC/deploy/docker/developer-profiles/dev-profile-${VSS_PROFILE}/.env"
+    sed -i "s/^RTVI_CV_PORT=${cv_port}$/RTVI_CV_PORT=${alt_port}/" "$env_file" 2>/dev/null || true
+    log "patched DS REST port ${cv_port}→${alt_port} in configs and .env"
 }
 patch_rt_cv_to_trafficcamnet
 

@@ -51,7 +51,7 @@ services:
       - COURSE_LLM_BASE_URL=http://host.docker.internal:30081
       - COURSE_VIOS_BASE_URL=http://host.docker.internal:30888/vst/api
       - COURSE_ELK_BASE_URL=http://host.docker.internal:9200
-      - COURSE_RTVI_CV_BASE_URL=http://host.docker.internal:9000
+      - COURSE_RTVI_CV_BASE_URL=http://host.docker.internal:9002
       - COURSE_RTVI_EMBED_BASE_URL=http://host.docker.internal:8017
       - COURSE_RTVI_VLM_BASE_URL=http://host.docker.internal:${VSS_RT_VLM_PORT:-8018}
       - COURSE_AGENT_BASE_URL=http://host.docker.internal:8000
