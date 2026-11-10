@@ -34,5 +34,7 @@ services:
       - ${DEV_ASSESSMENT_PORT:-18080}:8080
 
   nginx:
+    # Defaults to 80:80 (Brev). Override for local dev if port 80 is taken:
+    #   DEV_NGINX_PORT=18000 docker compose ... up
     ports:
-      - ${DEV_NGINX_PORT:-18000}:80
+      - "${DEV_NGINX_PORT:-80}:80"

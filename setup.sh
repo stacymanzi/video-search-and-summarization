@@ -239,6 +239,12 @@ DEPLOY_SH="$SRC/deploy/docker/scripts/dev-profile.sh"
 # ---------------------------------------------------------------------------
 status "RUNNING: applying course patches"
 
+# jq is used by patch_rt_cv_to_trafficcamnet; install if missing.
+if ! command -v jq >/dev/null 2>&1; then
+    log "installing jq (required for behaviour-analytics config patch)"
+    apt-get update -qq && apt-get install -y -qq jq
+fi
+
 # 6a. Preserve volumes: prevent dev-profile.sh 'down' from deleting model caches.
 #     The same patch as in deploy-vss.sh (verified against v3.2.1).
 patch_preserve_volumes() {
@@ -569,5 +575,6 @@ HOST_IP_DISPLAY=$(hostname -I | awk '{print $1}')
 log ""
 log "Stack is up!"
 log "  JupyterLab: http://${HOST_IP_DISPLAY}/lab"
-log "  Watch course-prep: docker compose logs -f course-prep"
-log "  VSS seed log:      cat $SEED_STATUS_DIR/seed.log"
+log "  Watch course-prep:"
+log "    docker compose -f $REPO_DIR/docker-compose.yml -f $REPO_DIR/docker-compose.override.yml logs -f course-prep"
+log "  VSS seed log: cat $SEED_STATUS_DIR/seed.log"
