@@ -26,9 +26,10 @@ services:
     volumes:
       - course_data:/dli/task/data
       - assessment_results:/dli/assessment_results:ro
-      # Read the deployer's seed-status and seed.log that setup.sh writes.
-      # Notebooks read these to report deploy progress before VSS is ready.
-      - /opt/vss/_course-runtime:/opt/vss/_course-runtime:ro
+      # Full upstream blueprint checkout. Notebooks read generated.env,
+      # compose configs and the deployer's seed-status/_course-runtime/.
+      # Same path as on the host so any absolute paths in configs resolve.
+      - /opt/vss:/opt/vss:ro
       # Host Docker socket: notebooks run docker commands against the VSS
       # containers that live on the host daemon (not inside dind).
       - /var/run/docker.sock:/var/run/docker.sock
@@ -70,9 +71,8 @@ services:
       - COURSE_DATA_TIMEOUT_S=${COURSE_DATA_TIMEOUT_S:-5400}
     volumes:
       - course_data:/dli/task/data
-      # Read the deployer's seed-status so prepare_course.py can include the
-      # deploy's last status line in its own progress output.
-      - /opt/vss/_course-runtime:/opt/vss/_course-runtime:ro
+      # seed-status and seed.log for deploy progress reporting.
+      - /opt/vss:/opt/vss:ro
     depends_on:
       nginx:
         condition: service_started
@@ -101,6 +101,5 @@ services:
       - "host.docker.internal:host-gateway"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf
-      - course_data:/dli/task/data:ro
     depends_on:
       - lab

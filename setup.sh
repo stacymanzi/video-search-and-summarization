@@ -50,6 +50,9 @@ export ENABLE_CRITIC
 export VSS_PUBLIC_PORT=80
 
 SRC=/opt/vss
+# Create early: docker bind-mounts an absent source as root-owned empty dir,
+# which shadows the real checkout once it arrives. Exists before `up`.
+mkdir -p "${SRC}/_course-runtime"
 REPO_URL="https://github.com/NVIDIA-AI-Blueprints/video-search-and-summarization.git"
 TAG="v${VSS_VERSION}"
 SEED_STATUS_DIR="${SRC}/_course-runtime"
@@ -212,7 +215,6 @@ log "course videos ready"
 # 5. Clone the VSS 3.2.1 upstream blueprint to /opt/vss
 #    Uses init+fetch+checkout to work in a pre-existing directory.
 # ---------------------------------------------------------------------------
-mkdir -p "$SEED_STATUS_DIR"
 if [[ ! -d "$SRC/.git" ]]; then
     status "RUNNING: cloning VSS blueprint $TAG"
     log "cloning $TAG from $REPO_URL to $SRC"
