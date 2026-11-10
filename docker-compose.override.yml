@@ -1,77 +1,38 @@
-# Uncomment version only if using legacy VM
-# version: '2.3'
-
-# Development AND launch. `build:` directives, bind mounts of the working tree,
-# the dev ports and the dev secrets file; but the platform applies this file at
-# launch too (DLI brief 1.5, Dana, Feb 26 2026; BUILD.md P9), merged before
-# docker-compose.deployment.yml. Consequences: no anonymous volumes here; every
-# bind-mount source below must ship in the launch tarball (.launchignore)
-# unless the deployment file puts a named volume on the same container path
-# (it does for /dli/task and /dli/assessment, the only two paths under /dli
-# this file binds; CI fails if any bind under /dli survives the merge); the
-# `build:` directives are harmless at launch because the deployment file
-# supplies `image:` for the same services. Check the merge with
-#   docker compose -f docker-compose.yml -f docker-compose.override.yml \
-#                  -f docker-compose.deployment.yml config
+# Development override. Build directives and working-tree bind mounts.
+# Applied automatically by `docker compose up` without an explicit -f flag.
+# setup.sh applies it explicitly with -f to stay unambiguous.
 
 services:
 
   lab:
-    # The build context is task1/ (not task1/lab/): the grader lives at
-    # task1/assessment/ with its entrypoint at task1/entrypoint.assessment.sh
-    # (CONTRACTS.md section 5), and task1/.dockerignore governs the context.
-    # No build `target:` anywhere in this file: Pebble's builder ignores it and
-    # builds the LAST stage of the named Dockerfile (production launch of v0.0.3).
-    # One Dockerfile per image instead: lab/Dockerfile ends in the lab stage,
-    # Dockerfile.assessment in the assessment stage (tests/check_dockerfiles.py).
+    # Build context is the repo root (not lab/): the assessment files, Dockerfile.assessment
+    # and entrypoint.assessment.sh all live at the root level.
     build:
       context: .
       dockerfile: lab/Dockerfile
     volumes:
-      # Mount the content into the container so that changes made in the
-      # container can be version controlled, and changes made on the host (like
-      # creating a new file) do not require a rebuild of the image.
+      # Bind the working copy so notebook edits are visible without a rebuild.
       - ./lab/task/:/dli/task/
-
-  dind:
-    build: ./dind
-    # NOTE: dind_storage is deliberately NOT redefined as a bind mount here.
-    # overlay2 will not run on top of one; it stays a named volume everywhere.
-
-  vss-deploy:
-    build: ./deploy
-    # Supplies NGC_API_KEY for `docker login nvcr.io` and dev-profile.sh.
-    # Ignored and not version controlled. Must be provided during development.
-    env_file: ./.env-dev
 
   course-prep:
     build:
       context: .
       dockerfile: lab/Dockerfile
     volumes:
-      # Same tree the lab sees, so course-prep reads the working copy's
-      # part1/course_setup.py and search-videos.json without a rebuild. It
-      # writes only under /dli/task/data, which is the course_data volume, not
-      # this bind. The script itself is image content at /dli/prep, outside
-      # this bind, so nothing masks it and no second bind is needed; a change
-      # to lab/prep/ takes effect on the next image build, like a change to the
-      # Dockerfile.
+      # Same tree the lab sees; course-prep imports course_setup.py from here.
+      # It writes only under /dli/task/data (the course_data named volume).
       - ./lab/task/:/dli/task/
 
   assessment:
-    # The only service built from Dockerfile.assessment (the lab image plus the
-    # grader and answer keys). Its own file, not a `target`: see the lab service.
     build:
       context: .
       dockerfile: Dockerfile.assessment
     volumes:
       - ./lab/task/:/dli/task/
-      # Grader edits take effect on container restart, no rebuild.
       - ./assessment/:/dli/assessment/
     ports:
-      - $DEV_ASSESSMENT_PORT:8080
+      - ${DEV_ASSESSMENT_PORT:-18080}:8080
 
   nginx:
-    # Here we set the port we want to use to access our content during development.
     ports:
-      - $DEV_NGINX_PORT:80
+      - ${DEV_NGINX_PORT:-18000}:80

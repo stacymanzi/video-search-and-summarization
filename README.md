@@ -13,15 +13,20 @@ into a production visual AI pipeline.
 
 ## What runs
 
+`setup.sh` deploys VSS 3.2.1 directly on the host Docker daemon, then brings up 4 course services.
+
+**VSS stack** (started by `setup.sh` via `dev-profile.sh`, runs on host daemon):
+
+RT-VLM (Cosmos 3 Super Reasoner FP8) · RT-CV (TrafficCamNet RT-DETR) · RT-Embed (Cosmos-Embed1) · LLM NIM (Nemotron-nano-9b) · VIOS · Kafka · Elasticsearch · Logstash · Behavior Analytics
+
+**Course services** (started by `docker compose up`):
+
 | Service | Role |
 |---|---|
-| `dind` | Privileged Docker daemon running the full inner VSS stack |
-| `vss-deploy` | One-shot: NGC login, pulls images, downloads models, deploys VSS 3.2.1 search profile |
 | `lab` | JupyterLab with notebooks 0-4 and the Part 1 assessment |
 | `course-prep` | Waits for VSS health, ingests the four search clips, writes `search_sources.json` |
 | `assessment` | Grader: Go runner on 8080, Python grader on 8081 |
-| `nginx` | Reverse proxy on port 80 with the course bar |
-| `s3_data_loader` | Local copy of pre-staged videos into the course data volume |
+| `nginx` | Reverse proxy on port 80; routes `/lab`, `/agent`, `/es`, `/vios`, etc. |
 
 GPU layout (2x RTX Pro 6000, 96 GB each):
 - GPU 0: RT-VLM (Cosmos 3 Super Reasoner FP8) + RT-CV (TrafficCamNet RT-DETR) + NVStreamer
@@ -62,16 +67,21 @@ echo 'NGC_API_KEY=nvapi-...' > /home/ubuntu/vss-foundations/.env-dev
 bash /home/ubuntu/vss-foundations/setup.sh
 ```
 
-`setup.sh` installs the `docker-compose` v1 shim, verifies the video assets, builds the images,
-and launches the stack. Cold first deploy takes 60-90 minutes (NGC image pull + model weight
-download + TensorRT engine build). After that, snapshot the Brev volume to reuse across instances.
+`setup.sh` configures the host Docker daemon for cgroupfs, deploys VSS 3.2.1 directly on the
+host (no Docker-in-Docker), copies the pre-staged videos, and brings up the 4 course services.
+Cold first deploy takes 60-90 minutes (NGC image pull ~93 GB + model weights + TensorRT engine
+build). After that, snapshot the Brev volume to reuse across instances.
 
 Watch progress:
 
 ```bash
-cd /home/ubuntu/vss-foundations
-docker-compose -f docker-compose.yml -f docker-compose.override.yml -f docker-compose.brev.yml \
-  logs -f vss-deploy course-prep
+# VSS deploy log (written by setup.sh)
+cat /opt/vss/_course-runtime/seed.log
+
+# Course-prep progress (ingesting search clips)
+docker compose -f /home/ubuntu/vss-foundations/docker-compose.yml \
+               -f /home/ubuntu/vss-foundations/docker-compose.override.yml \
+               logs -f course-prep
 ```
 
 JupyterLab opens at `http://<instance-ip>/lab` once nginx is healthy. The onboarding notebook
@@ -90,8 +100,10 @@ JupyterLab opens at `http://<instance-ip>/lab` once nginx is healthy. The onboar
 
 ## Notes
 
-- **Never** run `docker-compose down -v`. The `-v` flag destroys the `dind_storage` (~93 GB) and
-  `vss_models` (~60 GB) volumes. Use `docker-compose down` only.
+- **Never** run `docker compose down -v` on the host. The VSS stack creates its own named volumes
+  (model caches, TensorRT engines). `setup.sh` patches `dev-profile.sh` to preserve these on
+  restart; `-v` bypasses that and destroys ~150 GB of downloaded data.
+- To restart VSS without re-downloading everything: `VSS_FORCE_REDEPLOY=true bash setup.sh`.
 - The Course Docs tile serves a stub page until the external docs site is configured.
 - `BREV_ASSETS_DIR` defaults to `/home/ubuntu/course-assets`. Set it as an env var to use a
   different path.
