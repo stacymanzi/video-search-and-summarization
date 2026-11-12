@@ -6,12 +6,13 @@
 #   1. Configure host Docker daemon for cgroupfs (required by DeepStream/VSS)
 #   2. Load NGC key from .env-dev
 #   3. NGC docker login (nvcr.io)
-#   4. Copy pre-staged course videos into the course_data Docker volume
-#   5. Clone the VSS 3.2.1 upstream blueprint to /opt/vss
-#   6. Apply course patches (preserve-volumes, RT-VLM into search, TrafficCamNet)
-#   7. Run dev-profile.sh to deploy the full VSS search stack on the host daemon
-#   8. Wait for VSS readiness
-#   9. docker compose up for the 4 course services (lab, course-prep, assessment, nginx)
+#   4. Clone the VSS 3.2.1 upstream blueprint to /opt/vss
+#   5. Apply course patches (preserve-volumes, RT-VLM into search, TrafficCamNet)
+#   6. Run dev-profile.sh to deploy the full VSS search stack on the host daemon
+#   7. Wait for VSS readiness
+#   8. docker compose up for the 4 course services (lab, course-prep, assessment, nginx)
+#   9. Copy pre-staged course videos into the course_data Docker volume
+#      (videos can be uploaded during the 2-hour VSS deployment; course-prep waits)
 #
 # Usage:
 #   echo 'NGC_API_KEY=nvapi-...' > /path/to/repo/.env-dev
@@ -146,80 +147,7 @@ fi
 log "NGC login OK; vss-core entitlement confirmed"
 
 # ---------------------------------------------------------------------------
-# 4. Copy pre-staged course videos into the course_data Docker volume
-# ---------------------------------------------------------------------------
-status "RUNNING: copying course videos"
-log "verifying pre-staged assets at $ASSETS_DIR"
-REQUIRED_VIDEOS=(
-    "videos/traffic_short.mp4"
-    "videos/search-videos/normal_eval.mp4"
-    "videos/search-videos/rain_eval.mp4"
-    "videos/search-videos/fog_eval.mp4"
-    "videos/search-videos/night_eval.mp4"
-)
-for rel in "${REQUIRED_VIDEOS[@]}"; do
-    [[ -f "$ASSETS_DIR/$rel" ]] || \
-        fail "Missing required asset: $ASSETS_DIR/$rel\nUpload course assets to $ASSETS_DIR before running setup."
-done
-
-log "copying videos into course_data volume ($COURSE_DATA_VOLUME)"
-docker volume create "$COURSE_DATA_VOLUME" 2>/dev/null || true
-# Use a one-shot container so volume permissions are correct.
-docker run --rm \
-    -v "$ASSETS_DIR:/brev-assets:ro" \
-    -v "${COURSE_DATA_VOLUME}:/data" \
-    -v "$REPO_DIR/assessment/grader/answer_keys/ground_truth:/gt:ro" \
-    python:3.11-slim python3 -c "
-import shutil, os, json, tempfile
-from datetime import datetime, timezone
-
-assets, data = '/brev-assets', '/data'
-
-for src_rel, dst_rel in [
-    ('videos/traffic_short.mp4',              'traffic_short.mp4'),
-    ('videos/search-videos/normal_eval.mp4',  'search-videos/normal_eval.mp4'),
-    ('videos/search-videos/rain_eval.mp4',    'search-videos/rain_eval.mp4'),
-    ('videos/search-videos/fog_eval.mp4',     'search-videos/fog_eval.mp4'),
-    ('videos/search-videos/night_eval.mp4',   'search-videos/night_eval.mp4'),
-]:
-    src = os.path.join(assets, src_rel)
-    dst = os.path.join(data, dst_rel)
-    os.makedirs(os.path.dirname(dst), exist_ok=True)
-    if os.path.exists(dst):
-        print(f'  skip (exists): {dst}')
-    else:
-        shutil.copy2(src, dst)
-        print(f'  copied: {dst}')
-
-docs_dst = os.path.join(data, 'course-docs')
-if not os.path.exists(docs_dst):
-    docs_src = os.path.join(assets, 'course-docs')
-    if os.path.isdir(docs_src):
-        shutil.copytree(docs_src, docs_dst)
-        print(f'  copied course-docs')
-    else:
-        os.makedirs(docs_dst)
-        open(os.path.join(docs_dst, 'index.html'), 'w').write(
-            '<html><body><p>Course Docs site not yet deployed.</p></body></html>')
-        print(f'  wrote course-docs stub')
-
-gt_dst = os.path.join(data, 'ground_truth', 'search_videos.json')
-if not os.path.exists(gt_dst):
-    os.makedirs(os.path.dirname(gt_dst), exist_ok=True)
-    shutil.copy2('/gt/search_videos.json', gt_dst)
-    print('  copied ground_truth/search_videos.json')
-
-path = os.path.join(data, '.course-data-status.json')
-_, tmp = tempfile.mkstemp(dir=data)
-with open(tmp, 'w') as f:
-    json.dump({'state': 'OK', 'finished': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')}, f)
-os.replace(tmp, path)
-print('  wrote .course-data-status.json OK')
-"
-log "course videos ready"
-
-# ---------------------------------------------------------------------------
-# 5. Clone the VSS 3.2.1 upstream blueprint to /opt/vss
+# 4. Clone the VSS 3.2.1 upstream blueprint to /opt/vss
 #    Uses init+fetch+checkout to work in a pre-existing directory.
 # ---------------------------------------------------------------------------
 if [[ ! -d "$SRC/.git" ]]; then
@@ -242,7 +170,7 @@ DEPLOY_SH="$SRC/deploy/docker/scripts/dev-profile.sh"
 [[ -f "$DEPLOY_SH" ]] || fail "expected $DEPLOY_SH in the upstream repo; layout may have changed"
 
 # ---------------------------------------------------------------------------
-# 6. Apply course patches
+# 5. Apply course patches
 # ---------------------------------------------------------------------------
 status "RUNNING: applying course patches"
 
@@ -598,7 +526,7 @@ if [[ "${goto_course_services:-false}" != "true" ]]; then
 fi
 
 # ---------------------------------------------------------------------------
-# 8. Wait for VSS readiness
+# 7. Wait for VSS readiness
 #    wait-for-vss.sh was removed in v3.2.1; we poll vss-agent directly.
 # ---------------------------------------------------------------------------
 status "RUNNING: waiting for VSS readiness (up to ${VSS_READY_TIMEOUT_S}s)"
@@ -627,7 +555,7 @@ done
 log "VSS stack is ready"
 
 # ---------------------------------------------------------------------------
-# 9. Launch the 4 course services
+# 8. Launch the 4 course services
 # ---------------------------------------------------------------------------
 cd "$REPO_DIR"
 
@@ -645,6 +573,83 @@ docker compose -f docker-compose.yml -f docker-compose.override.yml up -d
 
 HOST_IP_DISPLAY=$(hostname -I | awk '{print $1}')
 NGINX_PORT_DISPLAY=${DEV_NGINX_PORT:-80}
+log ""
+# ---------------------------------------------------------------------------
+# 9. Copy pre-staged course videos into the course_data Docker volume
+#    Done after compose up so the 2-hour VSS deployment can run while videos
+#    are being uploaded. course-prep polls for the data marker (up to 90 min).
+# ---------------------------------------------------------------------------
+status "RUNNING: copying course videos"
+log "verifying pre-staged assets at $ASSETS_DIR"
+REQUIRED_VIDEOS=(
+    "videos/traffic_short.mp4"
+    "videos/search-videos/normal_eval.mp4"
+    "videos/search-videos/rain_eval.mp4"
+    "videos/search-videos/fog_eval.mp4"
+    "videos/search-videos/night_eval.mp4"
+)
+for rel in "${REQUIRED_VIDEOS[@]}"; do
+    [[ -f "$ASSETS_DIR/$rel" ]] || \
+        fail "Missing required asset: $ASSETS_DIR/$rel
+  Upload course assets to $ASSETS_DIR before this step completes.
+  course-prep is already running and will start once videos are ready."
+done
+
+log "copying videos into course_data volume ($COURSE_DATA_VOLUME)"
+docker volume create "$COURSE_DATA_VOLUME" 2>/dev/null || true
+docker run --rm \
+    -v "$ASSETS_DIR:/brev-assets:ro" \
+    -v "${COURSE_DATA_VOLUME}:/data" \
+    -v "$REPO_DIR/assessment/grader/answer_keys/ground_truth:/gt:ro" \
+    python:3.11-slim python3 -c "
+import shutil, os, json, tempfile
+from datetime import datetime, timezone
+
+assets, data = '/brev-assets', '/data'
+
+for src_rel, dst_rel in [
+    ('videos/traffic_short.mp4',              'traffic_short.mp4'),
+    ('videos/search-videos/normal_eval.mp4',  'search-videos/normal_eval.mp4'),
+    ('videos/search-videos/rain_eval.mp4',    'search-videos/rain_eval.mp4'),
+    ('videos/search-videos/fog_eval.mp4',     'search-videos/fog_eval.mp4'),
+    ('videos/search-videos/night_eval.mp4',   'search-videos/night_eval.mp4'),
+]:
+    src = os.path.join(assets, src_rel)
+    dst = os.path.join(data, dst_rel)
+    os.makedirs(os.path.dirname(dst), exist_ok=True)
+    if os.path.exists(dst):
+        print(f'  skip (exists): {dst}')
+    else:
+        shutil.copy2(src, dst)
+        print(f'  copied: {dst}')
+
+docs_dst = os.path.join(data, 'course-docs')
+if not os.path.exists(docs_dst):
+    docs_src = os.path.join(assets, 'course-docs')
+    if os.path.isdir(docs_src):
+        shutil.copytree(docs_src, docs_dst)
+        print(f'  copied course-docs')
+    else:
+        os.makedirs(docs_dst)
+        open(os.path.join(docs_dst, 'index.html'), 'w').write(
+            '<html><body><p>Course Docs site not yet deployed.</p></body></html>')
+        print(f'  wrote course-docs stub')
+
+gt_dst = os.path.join(data, 'ground_truth', 'search_videos.json')
+if not os.path.exists(gt_dst):
+    os.makedirs(os.path.dirname(gt_dst), exist_ok=True)
+    shutil.copy2('/gt/search_videos.json', gt_dst)
+    print('  copied ground_truth/search_videos.json')
+
+path = os.path.join(data, '.course-data-status.json')
+_, tmp = tempfile.mkstemp(dir=data)
+with open(tmp, 'w') as f:
+    json.dump({'state': 'OK', 'finished': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')}, f)
+os.replace(tmp, path)
+print('  wrote .course-data-status.json OK')
+"
+log "course videos ready"
+
 log ""
 log "Stack is up!"
 log "  JupyterLab: http://${HOST_IP_DISPLAY}${NGINX_PORT_DISPLAY:+:${NGINX_PORT_DISPLAY}}/lab"
