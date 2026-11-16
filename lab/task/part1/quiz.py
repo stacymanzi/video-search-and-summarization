@@ -44,7 +44,8 @@ ANSWERS = Path(os.environ.get("ASSESSMENT_ANSWERS", str(WORK / "answers.json")))
 KEY_FILE = Path(os.environ.get("ASSESSMENT_KEY", str(Path(__file__).with_name("assessment_key.json"))))
 GROUND_TRUTH = Path(os.environ.get("ASSESSMENT_GROUND_TRUTH", "/dli/task/data/ground_truth/search_videos.json"))
 REGISTRY = Path(os.environ.get("ASSESSMENT_REGISTRY", "/dli/task/data/search_sources.json"))
-BASE = os.environ.get("ASSESSMENT_BASE_URL", "http://nginx")
+from course_runtime import BASE as COURSE_BASE
+BASE = os.environ.get("ASSESSMENT_BASE_URL", COURSE_BASE)
 
 # The grader uses the same numbers (rubric.json, part1.thresholds). Change both together.
 RAW_INDEX = "mdx-raw-2025-01-01"   # RT-CV frame records of file uploads, whatever the upload timestamp

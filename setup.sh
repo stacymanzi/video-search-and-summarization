@@ -525,6 +525,13 @@ if [[ "${goto_course_services:-false}" != "true" ]]; then
     fi
 fi
 
+# Keep long-running services available after a host/Docker restart. Upstream
+# uses no/on-failure for some dependencies, which leaves Kafka and VIOS down
+# after a reboot. Do not apply this to one-shot init containers.
+docker update --restart unless-stopped \
+    kafka vss-vios-sensor vss-vios-nvstreamer vss-rtvi-cv >/dev/null
+docker start kafka vss-vios-sensor vss-vios-nvstreamer vss-rtvi-cv >/dev/null
+
 # ---------------------------------------------------------------------------
 # 7. Wait for VSS readiness
 #    wait-for-vss.sh was removed in v3.2.1; we poll vss-agent directly.
@@ -656,3 +663,6 @@ log "  JupyterLab: http://${HOST_IP_DISPLAY}${NGINX_PORT_DISPLAY:+:${NGINX_PORT_
 log "  Watch course-prep:"
 log "    docker compose -f $REPO_DIR/docker-compose.yml -f $REPO_DIR/docker-compose.override.yml logs -f course-prep"
 log "  VSS seed log: cat $SEED_STATUS_DIR/seed.log"
+
+# Enable the host Brev JupyterLab against the same proxy and data volumes.
+bash "$REPO_DIR/setup-brev-jupyter.sh"

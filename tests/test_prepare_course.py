@@ -1,4 +1,4 @@
-"""Offline tests for prepare_course.py: the S3 marker wait, the status file, when ingest() reuses a registered
+"""Offline tests for prepare_course.py: the local staging marker wait, the status file, when ingest() reuses a registered
 sensor, the step order of main().
 
 Run as a script from anywhere: python3 -I task1/tests/test_prepare_course.py
@@ -78,12 +78,12 @@ class WaitForCourseDataTests(unittest.TestCase):
         def loader(now):
             if now == 20:
                 self.write(state="FAILED", error="KeyError: 'Contents'")
-        with self.assertRaisesRegex(RuntimeError, "^S3 course data loader failed: KeyError: 'Contents'$"):
+        with self.assertRaisesRegex(RuntimeError, "^Course data staging failed: KeyError: 'Contents'$"):
             self.wait(FakeTime(loader))
 
     def test_running_past_the_cap_times_out(self):
         self.write(state="RUNNING", started="T0")
-        with self.assertRaisesRegex(TimeoutError, r"^S3 course data not ready after 120s$"):
+        with self.assertRaisesRegex(TimeoutError, r"^course data not ready after 120s$"):
             self.wait(FakeTime(), timeout_s=120)
 
     def test_unreadable_or_unknown_marker_raises(self):
@@ -130,21 +130,21 @@ class StatusFileTests(unittest.TestCase):
             if now >= 70:
                 self.marker.write_text(json.dumps({"state": "OK"}))
         self.run_with(FakeTime(loader))
-        self.assertTrue(self.seen[0]["detail"].startswith("waiting for S3 course data (0 s"))
+        self.assertTrue(self.seen[0]["detail"].startswith("waiting for course data (0 s"))
         self.assertEqual(self.seen[0]["state"], "RUNNING")
         final = self.read_status()
         self.assertEqual((final["state"], final["detail"]), ("RUNNING", None))
-        self.assertIn("S3 course data ready after 70 s", self.tree.log_file.read_text())
+        self.assertIn("course data ready after 70 s", self.tree.log_file.read_text())
 
     def test_loader_failure_fails_every_asset_with_the_reason(self):
         self.marker.write_text(json.dumps({"state": "FAILED", "error": "ClientError: 404"}))
-        with self.assertRaisesRegex(RuntimeError, "S3 course data loader failed: ClientError: 404"):
+        with self.assertRaisesRegex(RuntimeError, "Course data staging failed: ClientError: 404"):
             self.run_with(FakeTime())
         final = self.read_status()
         self.assertEqual(final["state"], "FAILED")
         self.assertEqual({a["state"] for a in final["assets"].values()}, {"failed"})
         self.assertEqual({a["error"] for a in final["assets"].values()},
-                         {"S3 course data loader failed: ClientError: 404"})
+                         {"Course data staging failed: ClientError: 404"})
 
     def test_stack_failure_fails_every_asset_instead_of_staying_running(self):
         """A dead course-prep must not leave RUNNING behind: the notebooks would tell learners to keep waiting."""

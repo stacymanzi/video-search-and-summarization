@@ -8,8 +8,7 @@ concentrate on the question being asked.
 
 Rules this file keeps (BUILD.md D7, D11; CONTRACTS.md section 2):
 
-* Pure functions over ``requests``. No state, no caching, no configuration
-  lookups: ``BASE`` is the one constant and it is ``http://nginx``.
+* Pure functions over ``requests``. No state or caching. ``course_runtime.BASE`` selects the configured proxy.
 * No fallbacks. Every HTTP call carries a timeout and every non-2xx answer
   raises ``RuntimeError`` naming the method, the URL, the status and the first
   300 characters of the body. A missing field in a response raises too.
@@ -33,7 +32,7 @@ from urllib.parse import urlsplit
 
 import requests
 
-BASE = "http://nginx"
+from course_runtime import BASE
 
 AGENT_URL = BASE + "/agent/api/v1"
 VIOS_URL = BASE + "/vios/vst/api/v1"

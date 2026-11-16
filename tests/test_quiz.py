@@ -924,7 +924,7 @@ class NotebookShapeTests(unittest.TestCase):
 
     def test_submit_cell(self):
         submit = self.by_id["p1-submit"]
-        self.assertIn('"http://assessment:8081/grade/part1"', submit)
+        self.assertIn('from course_runtime import GRADE_URL', submit)
         self.assertIn("course_ui.results(", submit)
 
     def test_every_fixme_has_a_solution_here(self):

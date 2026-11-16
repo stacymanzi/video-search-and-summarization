@@ -107,3 +107,47 @@ JupyterLab opens at `http://<instance-ip>/lab` once nginx is healthy. The onboar
 - The Course Docs tile serves a stub page until the external docs site is configured.
 - `BREV_ASSETS_DIR` defaults to `/home/ubuntu/course-assets`. Set it as an env var to use a
   different path.
+
+## Brev JupyterLab
+
+`sudo bash setup.sh` now configures both the course container and Brev's host
+JupyterLab. It installs the host notebook dependencies, detects nginx's published
+port, and mounts the existing course data so both environments share the same
+files. The mounts persist across reboots. Long-running course services are also
+configured to restart after a host reboot.
+
+For an existing deployment, run only:
+
+```bash
+sudo bash setup-brev-jupyter.sh
+```
+
+Reload the notebooks and restart their kernels afterward. The host configuration
+is stored in `/etc/vss-course-host.json`; container notebooks continue to use
+Docker's `http://nginx` address. `COURSE_BASE_URL` can explicitly override the
+proxy address. The script defaults to `/home/ubuntu/.venv/bin/python` and
+`/home/ubuntu/.local/bin/uv`; override `BREV_PYTHON` and `BREV_UV` for a different
+Brev installation. Existing conflicting `/dli` paths are rejected rather than
+replaced.
+
+Course videos must still be staged in `BREV_ASSETS_DIR` (default:
+`/home/ubuntu/course-assets`) before `setup.sh` can complete video preparation.
+
+The Brev workflow uses pre-uploaded files; no S3 bucket or AWS credentials are
+needed. Upload this directory before running setup:
+
+```text
+/home/ubuntu/course-assets/
+└── videos/
+    ├── traffic_short.mp4
+    └── search-videos/
+        ├── normal_eval.mp4
+        ├── rain_eval.mp4
+        ├── fog_eval.mp4
+        └── night_eval.mp4
+```
+
+For another upload location, run `sudo BREV_ASSETS_DIR=/path/to/assets bash setup.sh`.
+Setup copies these files into the shared course data volume and writes the local
+staging marker. The course-prep service then registers and indexes the search
+videos; uploaded files still need this indexing step before notebook 4 is ready.

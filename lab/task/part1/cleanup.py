@@ -10,6 +10,7 @@ from urllib.parse import quote
 from uuid import UUID
 
 import requests
+from course_runtime import BASE
 
 LEDGER = Path('/dli/task/data/part1_resources.json')
 
@@ -34,7 +35,7 @@ def remember(kind, resource_id, *, name='', stream_id='', ledger=LEDGER):
 
 
 class Cleanup:
-    def __init__(self, base='http://nginx', ledger=LEDGER, session=None):
+    def __init__(self, base=BASE, ledger=LEDGER, session=None):
         self.base = base.rstrip('/')
         self.ledger = ledger
         self.session = session or requests.Session()

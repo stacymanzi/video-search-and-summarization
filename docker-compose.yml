@@ -19,6 +19,7 @@ services:
   # inspect` and `docker exec kafka ...` against the VSS containers that
   # dev-profile.sh started on the host daemon.
   lab:
+    restart: unless-stopped
     runtime: nvidia
     init: true
     extra_hosts:
@@ -101,6 +102,7 @@ services:
   # student-facing VSS endpoints. VSS services run with network_mode: host on
   # the host daemon; nginx reaches them via host.docker.internal.
   nginx:
+    restart: unless-stopped
     image: nginx:1.15.12-alpine
     extra_hosts:
       - "host.docker.internal:host-gateway"

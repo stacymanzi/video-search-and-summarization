@@ -16,10 +16,10 @@ CONTRACTS.md section 6. `main()` does, in order:
 
   1. Write /dli/task/data/course_prep_status.json with state RUNNING and every
      clip pending.
-  2. Wait for the S3 loader's marker /dli/task/data/.course-data-status.json
+  2. Wait for the local staging marker /dli/task/data/.course-data-status.json
      to read OK (cap COURSE_DATA_TIMEOUT_S), with the status file's `detail`
-     saying "waiting for S3 course data". Compose does not hold this service
-     until s3_data_loader exits (production launch fix 3, after tag v0.0.4).
+     saying "waiting for course data". Compose does not hold this service
+     until setup.sh finishes copying the pre-uploaded files into the shared volume.
      A FAILED loader or the cap marks every clip failed with the reason.
   3. Wait for http://nginx/agent/health, bounded, printing elapsed time and the
      deployer's status tail. A deployer failure or the cap marks every clip
@@ -67,14 +67,14 @@ SEARCH_MANIFEST_NAME = "search-videos.json"     # stays as in Berlin (CONTRACTS.
 # with its own part1/course_setup.py. In the image it is unset.
 TASK_DIR = os.environ.get("COURSE_PREP_TASK_DIR", DEFAULT_TASK_DIR)
 
-HEALTH_URL = "http://nginx/agent/health"
+HEALTH_URL = "http://nginx/agent/health"  # replaced after loading shared course configuration
 HEALTH_TIMEOUT_S = int(os.environ.get("COURSE_PREP_HEALTH_TIMEOUT_S", "5400"))
 HEALTH_EVERY_S = 15          # poll interval
 HEALTH_REPORT_EVERY_S = 120  # how often the deployer's status tail is printed while waiting
 EMBED_TIMEOUT_S = int(os.environ.get("COURSE_PREP_EMBED_TIMEOUT_S", "1800"))
 EMBED_EVERY_S = 15
 EMBED_TAIL_SLACK_S = 10      # notebook 4's rule: covered to within 10 s of the clip's end
-# Written by task1/load-course-data.py in the s3_data_loader service: RUNNING, then OK or FAILED.
+# Written atomically by setup.sh after copying local course assets into the shared volume.
 COURSE_DATA_MARKER_NAME = ".course-data-status.json"
 COURSE_DATA_TIMEOUT_S = int(os.environ.get("COURSE_DATA_TIMEOUT_S", "5400"))
 COURSE_DATA_EVERY_S = 10
@@ -82,6 +82,7 @@ COURSE_DATA_REPORT_EVERY_S = 60
 
 sys.path.insert(0, str(Path(TASK_DIR) / "part1"))
 import course_setup  # noqa: E402  (shared helper, CONTRACTS.md section 2)
+HEALTH_URL = course_setup.BASE + "/agent/health"
 
 
 def utc_now() -> str:
@@ -118,7 +119,7 @@ class Status:
 
     `{"state": "RUNNING|OK|FAILED", "detail", "assets": {name: {sensor_id, state, error}}, "updated"}`
     with asset states pending -> ingested -> ok | failed. `detail` is what the
-    run is waiting on (for example "waiting for S3 course data (120 s)"), or
+    run is waiting on (for example "waiting for course data (120 s)"), or
     null. Written RUNNING on construction, rewritten atomically on every
     change. Both entry points use this class, so the two paths cannot drift
     apart in format.
@@ -168,17 +169,17 @@ def search_assets(tree: Tree) -> list:
              "creation_time": item["creation_time"]} for item in manifest]
 
 
-# --- S3 course data -------------------------------------------------------------
+# --- course data -------------------------------------------------------------
 
 def wait_for_course_data(marker: Path, timeout_s: int, report, clock=time.monotonic, sleep=time.sleep,
                          every_s=COURSE_DATA_EVERY_S, report_every_s=COURSE_DATA_REPORT_EVERY_S) -> float:
-    """Block until the S3 loader's marker reads OK; return the seconds waited.
+    """Block until the local staging marker reads OK; return the seconds waited.
 
     Pure apart from what is injected (the marker path, the clock, sleep and the
     progress callback), so the tests drive it without a loader. Absent or
     RUNNING keeps waiting and calls report(elapsed) every report_every_s.
-    FAILED raises RuntimeError("S3 course data loader failed: <error>"); the
-    cap raises TimeoutError("S3 course data not ready after <cap>s"). A marker
+    FAILED raises RuntimeError("Course data staging failed: <error>"); the
+    cap raises TimeoutError("course data not ready after <cap>s"). A marker
     that is not a JSON object with a known state raises: the loader writes it
     atomically, so a half-written file is not a state to wait through.
     """
@@ -192,16 +193,16 @@ def wait_for_course_data(marker: Path, timeout_s: int, report, clock=time.monoto
             try:
                 payload = json.loads(marker.read_text())
             except ValueError as error:
-                raise RuntimeError(f"S3 course data marker {marker} is not JSON: {error}") from error
+                raise RuntimeError(f"course data marker {marker} is not JSON: {error}") from error
             state = payload.get("state") if isinstance(payload, dict) else None
             if state == "OK":
                 return elapsed
             if state == "FAILED":
-                raise RuntimeError(f"S3 course data loader failed: {payload.get('error') or 'no error recorded'}")
+                raise RuntimeError(f"Course data staging failed: {payload.get('error') or 'no error recorded'}")
             if state != "RUNNING":
-                raise RuntimeError(f"S3 course data marker {marker} has an unknown state {state!r}")
+                raise RuntimeError(f"course data marker {marker} has an unknown state {state!r}")
         if elapsed >= timeout_s:
-            raise TimeoutError(f"S3 course data not ready after {timeout_s}s")
+            raise TimeoutError(f"course data not ready after {timeout_s}s")
         if elapsed >= next_report:
             report(elapsed)
             next_report += report_every_s
@@ -211,7 +212,7 @@ def wait_for_course_data(marker: Path, timeout_s: int, report, clock=time.monoto
 def await_course_data(tree: Tree, status: Status) -> float:
     """Step 2: wait_for_course_data with progress in the status file and the log; on failure every asset fails with the reason."""
     def report(elapsed):
-        message = f"waiting for S3 course data ({elapsed:.0f} s, cap {COURSE_DATA_TIMEOUT_S} s)"
+        message = f"waiting for course data ({elapsed:.0f} s, cap {COURSE_DATA_TIMEOUT_S} s)"
         status.detail(message)
         tree.log(message)
 
@@ -222,7 +223,7 @@ def await_course_data(tree: Tree, status: Status) -> float:
         status.fail_all(str(error))
         raise
     status.detail(None)
-    tree.log(f"S3 course data ready after {waited:.0f} s")
+    tree.log(f"course data ready after {waited:.0f} s")
     return waited
 
 
@@ -327,7 +328,7 @@ def ingest(tree: Tree, asset: dict, registry: dict) -> str:
     """
     name, path = asset["filename"], asset["path"]
     if not path.is_file():
-        raise FileNotFoundError(f"{path} is missing; check task1/data_sources and the S3 upload")
+        raise FileNotFoundError(f"{path} is missing; check the pre-uploaded assets and rerun setup.sh")
     entry = registry.get(name)
     if entry and entry.get("completed") and entry.get("sensor_id"):
         sensor_id = entry["sensor_id"]
@@ -489,7 +490,7 @@ def prepare_search_collection(task_dir=DEFAULT_TASK_DIR, manifest_name=SEARCH_MA
     creation_time, sensor_id, completed}}`) and data/course_prep_status.json
     (state OK when every manifest clip is searchable; FAILED, and a
     RuntimeError, otherwise). The status file it writes replaces any earlier
-    one. It does not wait for the S3 loader: on a devbox the clips are already
+    one. It does not wait for local data staging: on a devbox the clips are already
     in data/search-videos/. Returns the registry restricted to the manifest.
     Raises on a missing clip or any HTTP error; nothing is retried here.
     """
