@@ -3,8 +3,8 @@
 # Runs directly on the host as root (no Docker-in-Docker needed on Brev).
 #
 # Steps:
-#   1. Configure host Docker daemon for cgroupfs (required by DeepStream/VSS)
-#   2. Load NGC key from .env-dev
+#   1. Ask for an NGC key (or use the environment / .env-dev)
+#   2. Configure host Docker daemon for cgroupfs (required by DeepStream/VSS)
 #   3. NGC docker login (nvcr.io)
 #   4. Clone the VSS 3.2.1 upstream blueprint to /opt/vss
 #   5. Apply course patches (preserve-volumes, RT-VLM into search, TrafficCamNet)
@@ -15,7 +15,6 @@
 #      (videos can be uploaded during the 2-hour VSS deployment; course-prep waits)
 #
 # Usage:
-#   echo 'NGC_API_KEY=nvapi-...' > /path/to/repo/.env-dev
 #   bash /path/to/repo/setup.sh
 #
 # Optional env vars:
@@ -38,6 +37,25 @@ unset _cpn
 
 log()  { echo "[setup] $*"; }
 fail() { echo "[setup] FATAL: $*" >&2; exit 1; }
+
+# Resolve credentials before creating directories or changing the host.
+# Existing credentials keep unattended setup supported.
+if [[ -z "${NGC_API_KEY:-}" && -f "$REPO_DIR/.env-dev" ]]; then
+    # shellcheck disable=SC1090
+    source /dev/stdin <<< "$(grep -E '^NGC_API_KEY=' "$REPO_DIR/.env-dev" || true)"
+fi
+if [[ -z "${NGC_API_KEY:-}" ]]; then
+    printf 'Enter your NGC API key (input hidden): ' >&2
+    if ! IFS= read -r -s NGC_API_KEY; then
+        printf '\n' >&2
+        fail "Unable to read an NGC API key. Set NGC_API_KEY or add it to .env-dev for unattended setup."
+    fi
+    printf '\n' >&2
+    [[ -n "${NGC_API_KEY//[[:space:]]/}" ]] || fail "NGC API key must not be empty. Re-run setup and enter your key."
+fi
+: "${NGC_CLI_API_KEY:=${NGC_API_KEY}}"
+: "${NGC_CLI_ORG:=nvidia}"
+export NGC_CLI_API_KEY NGC_CLI_ORG
 
 # VSS deploy parameters (match task1/.env defaults)
 : "${VSS_VERSION:=3.2.1}"
@@ -74,7 +92,7 @@ status() {
 }
 
 # ---------------------------------------------------------------------------
-# 1. Configure host Docker for cgroupfs
+# 2. Configure host Docker for cgroupfs
 #    DeepStream (RT-CV) requires the cgroupfs driver. Ubuntu 22 defaults to
 #    systemd; this configures the host daemon and restarts it once.
 # ---------------------------------------------------------------------------
@@ -113,30 +131,13 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# 2. Load NGC key
-# ---------------------------------------------------------------------------
-if [[ -f "$REPO_DIR/.env-dev" ]]; then
-    log "loading NGC key from .env-dev"
-    # shellcheck disable=SC1090
-    source <(grep -E '^NGC_API_KEY=' "$REPO_DIR/.env-dev")
-fi
-if [[ -z "${NGC_API_KEY:-}" ]]; then
-    fail "NGC_API_KEY is not set and .env-dev does not exist.
-  Write it first:  echo 'NGC_API_KEY=nvapi-...' > $REPO_DIR/.env-dev
-  Then re-run:     bash $REPO_DIR/setup.sh"
-fi
-: "${NGC_CLI_API_KEY:=${NGC_API_KEY}}"
-: "${NGC_CLI_ORG:=nvidia}"
-export NGC_CLI_API_KEY NGC_CLI_ORG
-
-# ---------------------------------------------------------------------------
 # 3. NGC docker login
 # ---------------------------------------------------------------------------
 status "RUNNING: NGC login"
 log "logging in to nvcr.io"
 if ! printf '%s' "${NGC_CLI_API_KEY}" | \
         docker login nvcr.io --username '$oauthtoken' --password-stdin 2>&1; then
-    fail "nvcr.io login failed; check the key in .env-dev"
+    fail "nvcr.io login failed; check your NGC API key"
 fi
 # Preflight: verify the key can see the core VSS image before pulling 93 GB.
 NGC_PREFLIGHT_IMAGE="nvcr.io/nvidia/vss-core/vss-agent:${VSS_VERSION}"

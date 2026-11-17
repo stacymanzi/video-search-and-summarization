@@ -39,11 +39,13 @@ Upload local assets; no S3 bucket or AWS credentials are required:
     └── night_eval.mp4
 ```
 
-Save `NGC_API_KEY=...` in `.env-dev` (ignored by Git). Then run:
+Run the setup script. On a new instance, its first prompt asks for your NGC API key with input hidden, before any host changes:
 
 ```bash
 sudo bash setup.sh
 ```
+
+The prompted key is used for this run and is not saved to disk. For unattended setup, supply `NGC_API_KEY` in the environment or save `NGC_API_KEY=...` in `.env-dev` (ignored by Git).
 
 For a different upload directory:
 
