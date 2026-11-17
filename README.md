@@ -53,8 +53,12 @@ For a different upload directory:
 sudo BREV_ASSETS_DIR=/path/to/assets bash setup.sh
 ```
 
-Setup stages the inputs into `notebooks/data`, starts preparation, and configures
-Brev's host JupyterLab. For an already-deployed stack, run only:
+Setup automatically configures Brev's host JupyterLab as soon as the course
+services start, before checking and copying video assets into `notebooks/data`.
+A host configuration failure stops setup before it reports success. Wait for
+setup to finish before opening notebooks; restart any kernels opened earlier.
+You do not need to run a separate Jupyter setup command on a new instance.
+For an already-deployed stack that needs host configuration repaired, run only:
 
 ```bash
 sudo bash setup-brev-jupyter.sh

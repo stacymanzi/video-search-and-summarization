@@ -593,6 +593,15 @@ log "starting course services (lab, course-prep, assessment, nginx)..."
 docker compose -f docker-compose.yml -f docker-compose.override.yml build
 docker compose -f docker-compose.yml -f docker-compose.override.yml up -d
 
+# Configure host notebooks as soon as their proxy and shared volumes exist.
+# Missing video assets must not prevent Brev kernels from reaching services.
+status "RUNNING: configuring Brev JupyterLab"
+log "configuring Brev host JupyterLab"
+if ! bash "$REPO_DIR/setup-brev-jupyter.sh"; then
+    fail "Brev JupyterLab configuration failed; setup is incomplete. Fix the error above and rerun sudo bash $REPO_DIR/setup.sh"
+fi
+log "Brev host JupyterLab configured; restart any notebook kernels opened before setup."
+
 HOST_IP_DISPLAY=$(hostname -I | awk '{print $1}')
 NGINX_PORT_DISPLAY=${DEV_NGINX_PORT:-80}
 log ""
@@ -673,11 +682,9 @@ print('  wrote .course-data-status.json OK')
 log "course videos ready"
 
 log ""
-log "Stack is up!"
+log "Stack is up and Brev JupyterLab is configured!"
+log "  Open notebooks/00_Home.ipynb in Brev JupyterLab; restart kernels opened before setup."
 log "  JupyterLab: http://${HOST_IP_DISPLAY}${NGINX_PORT_DISPLAY:+:${NGINX_PORT_DISPLAY}}/lab"
 log "  Watch course-prep:"
 log "    docker compose -f $REPO_DIR/docker-compose.yml -f $REPO_DIR/docker-compose.override.yml logs -f course-prep"
 log "  VSS seed log: cat $SEED_STATUS_DIR/seed.log"
-
-# Enable the host Brev JupyterLab against the same proxy and data volumes.
-bash "$REPO_DIR/setup-brev-jupyter.sh"
