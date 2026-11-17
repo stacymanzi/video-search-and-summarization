@@ -1,4 +1,4 @@
-"""Offline unit tests for task1/lab/task/part1/course_setup.py.
+"""Offline unit tests for task1/notebooks/course_setup.py.
 
 Run from the repo root: python3 -I task1/tests/test_course_setup.py
 (as a script, like test_notebook_checks.py; under -I the CWD is not on sys.path, so
@@ -17,7 +17,7 @@ from unittest.mock import Mock, patch
 
 import requests
 
-MODULE_PATH = Path(__file__).resolve().parents[1] / "lab/task/part1/course_setup.py"
+MODULE_PATH = Path(__file__).resolve().parents[1] / "notebooks/course_setup.py"
 _spec = importlib.util.spec_from_file_location("course_setup", MODULE_PATH)
 course_setup = importlib.util.module_from_spec(_spec)
 sys.modules["course_setup"] = course_setup
@@ -73,15 +73,15 @@ class CourseSetupTests(unittest.TestCase):
 
     # -- upload_url -------------------------------------------------------
 
-    def test_upload_url_rewrites_the_public_port_once(self):
-        public = "http://10.0.0.5:80/api/v1/storage/file?x=:80/"
+    def test_upload_url_routes_through_proxy_preserving_query(self):
+        public = "https://public.brev.example:80/vst/api/v1/storage/file?x=:80/"
         self.assertEqual(course_setup.upload_url(public),
-                         "http://10.0.0.5:30888/api/v1/storage/file?x=:80/")
+                         "http://nginx/vios/vst/api/v1/storage/file?x=:80/")
 
-    def test_upload_url_raises_without_the_public_port(self):
+    def test_upload_url_rejects_unexpected_path(self):
         with self.assertRaises(RuntimeError) as ctx:
             course_setup.upload_url("http://vios:30888/api/v1/storage/file")
-        self.assertIn("VSS_EXTERNAL_HOST", str(ctx.exception))
+        self.assertIn("unexpected VIOS upload URL", str(ctx.exception))
 
     # -- ingest_file ------------------------------------------------------
 
@@ -90,7 +90,7 @@ class CourseSetupTests(unittest.TestCase):
             clip = Path(folder) / "rain_eval.mp4"
             clip.write_bytes(b"\x00\x00\x00\x18ftypmp42")
             self.request.side_effect = [
-                response(body={"url": "http://10.0.0.5:80/api/v1/storage/file"}),
+                response(body={"url": "https://public.brev.example:80/vst/api/v1/storage/file"}),
                 response(body={"sensorId": "sensor-uuid-1"}),
                 response(body={"status": "ok"}),
             ]
@@ -101,7 +101,7 @@ class CourseSetupTests(unittest.TestCase):
         first, second, third = self.request.call_args_list
         self.assertEqual(first.args, ("POST", "http://nginx/agent/api/v1/videos"))
         self.assertEqual(first.kwargs["json"], {"filename": "rain_eval.mp4"})
-        self.assertEqual(second.args, ("POST", "http://10.0.0.5:30888/api/v1/storage/file"))
+        self.assertEqual(second.args, ("POST", "http://nginx/vios/vst/api/v1/storage/file"))
         self.assertEqual(second.kwargs["headers"]["nvstreamer-file-name"], "rain_eval.mp4")
         self.assertEqual(second.kwargs["headers"]["nvstreamer-is-last-chunk"], "true")
         metadata = json.loads(second.kwargs["files"]["metadata"][1])
@@ -115,13 +115,13 @@ class CourseSetupTests(unittest.TestCase):
             clip = Path(folder) / "rain_eval.mp4"
             clip.write_bytes(b"x")
             self.request.side_effect = [
-                response(body={"url": "http://10.0.0.5:80/api/v1/storage/file"}),
+                response(body={"url": "https://public.brev.example:80/vst/api/v1/storage/file"}),
                 response(status=507, text="Insufficient Storage " + "z" * 500),
             ]
             with self.assertRaises(RuntimeError) as ctx:
                 course_setup.ingest_file(str(clip), "rain_eval.mp4", "2025-01-02T00:00:00")
         message = str(ctx.exception)
-        self.assertIn("POST http://10.0.0.5:30888/api/v1/storage/file", message)
+        self.assertIn("POST http://nginx/vios/vst/api/v1/storage/file", message)
         self.assertIn("HTTP 507", message)
         self.assertIn("Insufficient Storage", message)
         self.assertEqual(self.request.call_count, 2)

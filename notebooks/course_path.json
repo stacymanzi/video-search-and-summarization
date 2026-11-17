@@ -1,0 +1,145 @@
+{
+  "_comment": "Course navigation and progress; paths are relative to notebooks/.",
+  "version": "2026-11-04",
+  "steps": [
+    {
+      "id": "intro",
+      "kind": "slides",
+      "block": "Introduction",
+      "minutes": 15,
+      "title": "VSS presentation (slides)",
+      "summary": "The instructor introduces VSS and the building blocks you use today."
+    },
+    {
+      "id": "onboarding",
+      "kind": "notebook",
+      "block": "Introduction",
+      "minutes": 15,
+      "title": "0. Course Onboarding",
+      "path": "00-onboarding.ipynb",
+      "summary": "Get to know JupyterLab, check that the lab is ready, and sign in to the coding agent.",
+      "done_when": [
+        "the readiness check in 0.3 prints `READY TO CONTINUE`"
+      ],
+      "milestone_cell_id": "o0-gate"
+    },
+    {
+      "id": "nb1",
+      "kind": "notebook",
+      "block": "Part 1",
+      "minutes": 15,
+      "title": "1. Inspect VSS Deployment",
+      "path": "01-inspect-vss-deployment.ipynb",
+      "summary": "See which services and models run here, check that they answer, and read the detector's labels.",
+      "done_when": [
+        "the cell in 1.3 that reads the detector's labels prints the label list"
+      ],
+      "milestone_cell_id": "716b9cc4"
+    },
+    {
+      "id": "nb2",
+      "kind": "notebook",
+      "block": "Part 1",
+      "minutes": 40,
+      "title": "2. RT-CV: Detection & Tracking",
+      "path": "02-rt-cv-detection-and-tracking.ipynb",
+      "summary": "Add a video to VIOS, read RT-CV's detections from Kafka and Elasticsearch, and find the vehicles that stand still.",
+      "done_when": [
+        "the check cell of the exercise in 2.11 prints how many cars pass your rule"
+      ],
+      "milestone_cell_id": "03-ex3-check"
+    },
+    {
+      "id": "break",
+      "kind": "break",
+      "block": "Part 1",
+      "minutes": 10,
+      "title": "Break"
+    },
+    {
+      "id": "nb3",
+      "kind": "notebook",
+      "block": "Part 1",
+      "minutes": 35,
+      "title": "3. RT-VLM: Captioning & Prompting",
+      "path": "03-rt-vlm-captioning-and-prompting.ipynb",
+      "summary": "Caption the clip with RT-VLM and see how the chunk size, the sampled frames and the prompt change the answer.",
+      "needs_before": [
+        "`traffic_short` added to VIOS in notebook 2"
+      ],
+      "done_when": [
+        "the check cell of the exercise in 3.6 prints `PASS`"
+      ],
+      "milestone_cell_id": "04b-exercise-check"
+    },
+    {
+      "id": "nb4",
+      "kind": "notebook",
+      "block": "Part 1",
+      "minutes": 30,
+      "title": "4. RT-Embed: Video Search",
+      "path": "04-rt-embed-video-search.ipynb",
+      "summary": "Search four traffic videos, write queries like captions, score the search against labels, and search one file at a time.",
+      "needs_before": [
+        "the lab pill is green, which means the four search videos are indexed"
+      ],
+      "done_when": [
+        "the check cell of the exercise in 4.9 prints `PASS`"
+      ],
+      "milestone_cell_id": "05-ex-perfile-check"
+    },
+    {
+      "id": "part1",
+      "kind": "assessment",
+      "block": "Part 1",
+      "minutes": 25,
+      "title": "Part 1 Assessment",
+      "path": "assessment.ipynb",
+      "summary": "On your own: use the building blocks on a new 30-second clip, answer eight questions, and submit.",
+      "needs_before": [
+        "notebooks 1 to 4 done",
+        "the lab pill is green"
+      ],
+      "done_when": [
+        "the Submit cell shows PASSED"
+      ],
+      "grades": "On your own, you use VIOS, RT-CV, Kafka, Elasticsearch and RT-VLM on a new clip, search the four traffic videos with RT-Embed, then answer eight questions.",
+      "milestone_cell_id": "p1-submit"
+    },
+    {
+      "id": "agent",
+      "kind": "terminal",
+      "block": "Part 1",
+      "minutes": 40,
+      "title": "VSS Coding Agent Skills",
+      "course_docs": "course/vss-coding-agent-skills.md",
+      "summary": "Have a coding agent with the VSS skills process four traffic videos, report possible collisions with clip links, and watch a live stream for a collision.",
+      "needs_before": [
+        "Codex signed in (notebook 0)",
+        "the lab pill is green"
+      ],
+      "done_when": [
+        "Checkpoint 1 of the page: the coding agent has added the four videos under `agent_` names, extracted their metadata and reported possible collisions with VIOS clip links, and you have checked one clip against the report",
+        "Checkpoint 2: RT-VLM has watched the live stream `agent_collision_live`, and you have opened a clip of its alert from the VIOS recording, or read why no alert came"
+      ],
+      "evidence": [
+        "work/agent/live_source.json"
+      ]
+    },
+    {
+      "id": "lunch",
+      "kind": "lunch",
+      "minutes": 45,
+      "title": "Lunch",
+      "summary": "Save your notebooks and export HTML copies from Home. Follow your instructor’s instructions for the next session."
+    },
+    {
+      "id": "part2",
+      "kind": "slides",
+      "block": "Part 2",
+      "minutes": 210,
+      "title": "Part 2: Applying VSS to Traffic Anomalies",
+      "summary": "On its own launch: you deploy VSS for traffic anomalies, generate synthetic data, and fine-tune the Cosmos 3 Nano verifier. Then you deploy the fine-tuned model, have the coding agent evaluate VSS, and take the Part 2 assessment."
+    }
+  ]
+}

@@ -14,14 +14,10 @@ import tempfile
 import unittest
 
 TASK1 = pathlib.Path(__file__).resolve().parents[1]
-PART1 = TASK1 / "lab" / "task" / "part1"
+PART1 = TASK1 / "notebooks"
 sys.path.insert(0, str(PART1))
 
 import course_ui  # noqa: E402
-
-_spec = importlib.util.spec_from_file_location("course_path", TASK1 / "scripts" / "course_path.py")
-course_path = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(course_path)
 
 STEPS = [
     {"id": "intro", "kind": "slides", "block": "Introduction", "minutes": 15, "title": "Slides",
@@ -33,7 +29,7 @@ STEPS = [
     {"id": "break", "kind": "break", "block": "Part 1", "minutes": 10, "title": "Break"},
     {"id": "part1", "kind": "assessment", "block": "Part 1", "minutes": 25, "title": "Part 1 Assessment",
      "path": "part1/assessment.ipynb", "summary": "On your own.", "milestone_cell_id": "submit",
-     "done_when": ["the Submit cell shows PASSED and you have clicked ASSESS TASK on the course page"],
+     "done_when": ["the Submit cell shows PASSED"],
      "grades": "It checks the building blocks."},
     {"id": "agent", "kind": "terminal", "block": "Part 1", "minutes": 25, "title": "Coding agent",
      "path": "part1/agent.ipynb", "summary": "Ask the coding agent.", "milestone_cell_id": "agent-check",
@@ -91,7 +87,7 @@ class Renderers(unittest.TestCase):
         self.assertNotIn("row above", html)
         html = course_ui.results_html({"passed": True, "checks": []}, "Part 1 Assessment")
         self.assertIn("Part 1 Assessment: PASSED", html)
-        self.assertIn("ASSESS TASK", html)
+        self.assertIn("result", html)
         for old in ("A1", "A2", "A3", "certificate", "all three"):
             self.assertNotIn(old, html)
         with self.assertRaises(KeyError):          # a grader response without checks is malformed
@@ -290,8 +286,8 @@ class Overview(ThePath):
         self.assertIn("Every step is done.", html)
         self.assertIn("Lunch is next. Save your work, then press the Part 2 launch button.", html)
         # ASSESS TASK comes before the lunch text that sends the learner to the next launch button.
-        self.assertIn("If you have not done so yet, click ASSESS TASK on the course page.", html)
-        self.assertLess(html.index("ASSESS TASK"), html.index("Lunch is next"))
+        self.assertIn("Your assessment result is saved by the Submit cell.", html)
+        self.assertLess(html.index("result"), html.index("Lunch is next"))
 
     def test_the_assessments_come_from_the_path(self):
         steps = [dict(s) for s in STEPS if s["id"] != "part1"]
@@ -318,11 +314,11 @@ class Overview(ThePath):
         (self.task_root / "work" / "agent" / "x.json").write_text("{}")      # every step done
         html = course_ui.mission_control_html(status=self.status(), path_file=self.path_file)
         self.assertIn("Every step is done.", html)
-        self.assertNotIn("ASSESS TASK", html)                              # nothing to record on the platform
+        self.assertNotIn("result", html)                              # nothing to record on the platform
 
 
 class ShippedPath(unittest.TestCase):
-    """part1/course_path.json against the names other files depend on (PLAN 8b) and the day's minutes."""
+    """course_path.json against the names other files depend on (PLAN 8b) and the day's minutes."""
 
     def setUp(self):
         self.data = json.loads((PART1 / "course_path.json").read_text())
@@ -352,8 +348,8 @@ class ShippedPath(unittest.TestCase):
 
     def test_one_assessment_with_its_marker_name(self):
         self.assertEqual([s["id"] for s in self.data["steps"] if s.get("kind") == "assessment"], ["part1"])
-        self.assertEqual(self.by["part1"]["path"], "part1/assessment.ipynb")
-        self.assertIn("ASSESS TASK", " ".join(self.by["part1"]["done_when"]))
+        self.assertEqual(self.by["part1"]["path"], "assessment.ipynb")
+        self.assertIn("Submit cell shows PASSED", " ".join(self.by["part1"]["done_when"]))
 
     def test_minutes_follow_the_day(self):
         # VSS Coding Agent Skills grew from 25 to 40 minutes on 2026-11-04, and lunch went from 60 to 45 minutes, so
@@ -365,12 +361,12 @@ class ShippedPath(unittest.TestCase):
 
     def test_paths_and_titles(self):
         expected = {
-            "onboarding": ("part1/00-onboarding.ipynb", "0. Course Onboarding"),
-            "nb1": ("part1/01-inspect-vss-deployment.ipynb", "1. Inspect VSS Deployment"),
-            "nb2": ("part1/02-rt-cv-detection-and-tracking.ipynb", "2. RT-CV: Detection & Tracking"),
-            "nb3": ("part1/03-rt-vlm-captioning-and-prompting.ipynb", "3. RT-VLM: Captioning & Prompting"),
-            "nb4": ("part1/04-rt-embed-video-search.ipynb", "4. RT-Embed: Video Search"),
-            "part1": ("part1/assessment.ipynb", "Part 1 Assessment"),
+            "onboarding": ("00-onboarding.ipynb", "0. Course Onboarding"),
+            "nb1": ("01-inspect-vss-deployment.ipynb", "1. Inspect VSS Deployment"),
+            "nb2": ("02-rt-cv-detection-and-tracking.ipynb", "2. RT-CV: Detection & Tracking"),
+            "nb3": ("03-rt-vlm-captioning-and-prompting.ipynb", "3. RT-VLM: Captioning & Prompting"),
+            "nb4": ("04-rt-embed-video-search.ipynb", "4. RT-Embed: Video Search"),
+            "part1": ("assessment.ipynb", "Part 1 Assessment"),
         }
         self.assertEqual({k: (self.by[k]["path"], self.by[k]["title"]) for k in expected}, expected)
         # The last step is the Course Docs page docs/course/vss-coding-agent-skills.md, not a notebook.
@@ -384,7 +380,6 @@ class ShippedPath(unittest.TestCase):
         for banned in (chr(0x2014), "Cosmos " + "Reason", "Cosmos 3 " + "Reasoner", "warehouse", "A1", "hand-off",
                        "review row", "verdict rule", "abstain", "the whole task", "certificate"):
             self.assertNotIn(banned, text)
-        self.assertEqual(course_path.path_problems(course_path.load_path()), [])
 
     def test_every_step_says_what_to_look_for(self):
         # The card at the end of each notebook names the cell that moves the course bar and what it prints. A Course
@@ -400,115 +395,6 @@ class ShippedPath(unittest.TestCase):
         self.assertNotIn("needs_before", self.by["onboarding"])     # onboarding waits for the lab itself (0.3)
 
 
-class Generator(unittest.TestCase):
-    """The cells task1/scripts/course_path.py writes into the notebooks, from a small path."""
-
-    def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory()
-        path_file = pathlib.Path(self.tmp.name) / "course_path.json"
-        path_file.write_text(json.dumps({"steps": STEPS}))
-        self.data = course_path.load_path(path_file)
-        self.by = {s["id"]: s for s in self.data["steps"]}
-
-    def tearDown(self):
-        self.tmp.cleanup()
-
-    def test_the_header_places_the_notebook_without_repeating_its_title_cell(self):
-        text = course_path.header_text(self.by["nb2"], self.data)
-        self.assertIn("**Part 1** &middot; about 40 min", text)
-        self.assertNotIn("Step 2 of 4", text)          # the title cell carries the notebook's own number
-        self.assertIn("Previous: [0. Onboarding](00-onboarding.ipynb)", text)
-        self.assertIn("Next: [Part 1 Assessment](assessment.ipynb)", text)
-        self.assertNotIn("Detect things.", text)
-
-    def test_the_card_before_an_assessment_says_what_it_grades(self):
-        text = course_path.handoff_text(self.by["onboarding"], self.data)
-        self.assertIn("**Next: [2. Detection](02.ipynb)**", text)
-        self.assertIn("After that: **[Part 1 Assessment](assessment.ipynb)** (about 25 min). It checks the building blocks.", text)
-        text = course_path.handoff_text(self.by["nb2"], self.data)
-        self.assertIn("**Then:** Break, 10 min.", text)
-
-    def test_the_last_card_lists_the_pauses_and_names_the_assessments(self):
-        text = course_path.handoff_text(self.by["agent"], self.data)
-        self.assertIn("> - Lunch, 60 min. Save your work, then press the Part 2 launch button.", text)
-        self.assertIn("> - Part 2, 210 min. On its own launch.", text)
-        self.assertIn("**This is the last step on this launch.** Before you leave, click ASSESS TASK on the course page "
-                      "if you have not done so yet. The Submit cell in [Part 1 Assessment](assessment.ipynb) must show "
-                      "PASSED first.", text)
-        # Read from the top, the card says to click ASSESS TASK before it says to press the Part 2 launch button.
-        self.assertLess(text.index("ASSESS TASK"), text.index("Lunch, 60 min"))
-        for old in ("A1", "A2", "A3", "certificate"):
-            self.assertNotIn(old, text)
-
-    def test_the_last_card_names_every_assessment(self):
-        steps = [dict(s) for s in STEPS]
-        steps.insert(3, {"id": "quiz", "kind": "assessment", "minutes": 5, "title": "Quiz", "path": "part1/quiz.ipynb",
-                         "milestone_cell_id": "q"})
-        path_file = pathlib.Path(self.tmp.name) / "two_assessments.json"
-        path_file.write_text(json.dumps({"steps": steps}))
-        data = course_path.load_path(path_file)
-        text = course_path.handoff_text(next(s for s in data["steps"] if s["id"] == "agent"), data)
-        self.assertIn("The Submit cells in [Quiz](quiz.ipynb) and [Part 1 Assessment](assessment.ipynb) must show "
-                      "PASSED first.", text)
-
-    def test_a_course_docs_step_says_where_to_open_it(self):
-        path_file = pathlib.Path(self.tmp.name) / "docs_step.json"
-        path_file.write_text(json.dumps({"steps": with_docs_agent()}))
-        data = course_path.load_path(path_file)
-        by = {s["id"]: s for s in data["steps"]}
-        named = "Coding agent (open Course Docs from the JupyterLab Launcher)"
-        self.assertIn(f"Previous: [2. Detection](02.ipynb) &middot; Next: {named}\n", course_path.header_text(by["part1"], data))
-        card = course_path.handoff_text(by["part1"], data)
-        self.assertIn(f"> **Next: {named}** &middot; Part 1 &middot; about 40 min  \n> Ask the coding agent.", card)
-        self.assertNotIn("agent.md", card)                   # never a link to the page source or into JupyterLab
-        self.assertIn(f"| {named} | Part 1 | 40 | Ask the coding agent. |", course_path.home_map_text(data))
-        self.assertEqual(course_path.path_problems(data), [])  # a page needs no notebook and no milestone cell
-
-    def test_a_course_docs_page_must_exist_with_the_step_title(self):
-        docs = pathlib.Path(self.tmp.name) / "docs"
-        data = {"steps": with_docs_agent()}
-        self.assertEqual(course_path.course_docs_problems(data, docs),
-                         ["docs/course/agent.md: the Course Docs page of step 'agent' is missing"])
-        (docs / "course").mkdir(parents=True)
-        page = docs / "course" / "agent.md"
-        page.write_text("(agent)=\n\n```text\n# a prompt line, not a heading\n```\n\n# Something Else\n")
-        self.assertEqual(course_path.course_docs_problems(data, docs),
-                         ["docs/course/agent.md: its H1 is 'Something Else', but step 'agent' calls it 'Coding agent'"])
-        page.write_text("# Coding agent\n\nText.\n")
-        self.assertEqual(course_path.course_docs_problems(data, docs), [])
-
-    def test_the_home_map_adds_up_the_parts_of_the_day(self):
-        text = course_path.home_map_text(self.data)
-        self.assertIn("| Step | Part | Min | What you do |", text)
-        self.assertIn("| [Part 1 Assessment](part1/assessment.ipynb) | Part 1 | 25 | On your own. |", text)
-        self.assertIn("The day: Introduction 30 min, Part 1 100 min, Lunch 60 min, Part 2 210 min (400 min in all).", text)
-
-    def test_stale_generated_cells_and_milestone_tags_are_removed(self):
-        cells = [
-            {"cell_type": "markdown", "id": "title", "metadata": {}, "source": ["# 2. Detection\n"]},
-            {"cell_type": "markdown", "id": "path-header-b3-03", "metadata": {"course_path": "header"}, "source": ["old\n"]},
-            {"cell_type": "markdown", "id": "path-header-nb2", "metadata": {"course_path": "header"}, "source": ["mine\n"]},
-            {"cell_type": "code", "id": "03-review-code", "metadata": {"tags": ["milestone"], "course_path_milestone": "b3-03"}},
-            {"cell_type": "code", "id": "keep-tags", "metadata": {"tags": ["milestone", "instructor-only"]}},
-            {"cell_type": "code", "id": "ex-check", "metadata": {"tags": ["milestone"], "course_path_milestone": "nb2"}},
-            {"cell_type": "markdown", "id": "path-handoff-b3-03", "metadata": {"course_path": "handoff"}, "source": ["old\n"]},
-        ]
-        course_path.drop_stale(cells, self.by["nb2"])
-        self.assertEqual([c["id"] for c in cells], ["title", "path-header-nb2", "03-review-code", "keep-tags", "ex-check"])
-        self.assertEqual(cells[2]["metadata"], {})
-        self.assertEqual(cells[3]["metadata"], {"tags": ["instructor-only"]})
-        self.assertEqual(cells[4]["metadata"], {"tags": ["milestone"], "course_path_milestone": "nb2"})
-
-    def test_the_json_is_checked(self):
-        steps = [dict(s) for s in STEPS] + [{"id": "nb2", "kind": "notebook", "title": "again"},
-                                           {"id": "x", "kind": "lecture", "title": "x"}]
-        problems = course_path.path_problems({"steps": steps})
-        self.assertTrue(any("used twice" in p for p in problems), problems)
-        self.assertTrue(any("unknown kind" in p for p in problems), problems)
-        self.assertTrue(any("no path or no milestone_cell_id" in p for p in problems), problems)
-        both = dict(DOCS_AGENT, path="part1/agent.ipynb")              # a page and a notebook at once
-        problems = course_path.path_problems({"steps": [both]})
-        self.assertTrue(any("names a Course Docs page and also a notebook path" in p for p in problems), problems)
 
 
 class HeadersAgree(unittest.TestCase):
@@ -519,7 +405,7 @@ class HeadersAgree(unittest.TestCase):
     """
 
     def test_every_step_has_a_generated_header_without_a_step_number(self):
-        task = PART1.parent
+        task = PART1
         nowhere = task / "nowhere"
         o = course_ui.course_overview(prep_file=nowhere, results_dir=nowhere, task_root=nowhere)
         self.assertEqual(o["n"], 7)

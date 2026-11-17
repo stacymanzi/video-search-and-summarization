@@ -5,7 +5,7 @@ cells: the recorder cell (`0926cc76`) and the NVStreamer upload (`770b8dba`)
 poll with a progress print and raise on timeout, so the mocks dispatch on the
 URL and the clock is faked; `remember` is imported once in the notebook's
 first cell, so it is passed in as a global. The parse-and-no-outputs check
-covers every shipped notebook under lab/task/part1 (6 at the time of writing).
+covers every shipped notebook under notebooks (6 at the time of writing).
 
 Run: uv run --offline --no-project --with nbformat --with requests --with pyyaml --with pytest python -I -m pytest task1/tests/test_stream_recording.py -q
 """
@@ -17,8 +17,8 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock
 
-TASK = Path(__file__).resolve().parents[1] / 'lab/task'
-NOTEBOOK = TASK / 'part1/02-rt-cv-detection-and-tracking.ipynb'
+TASK = Path(__file__).resolve().parents[1] / 'notebooks'
+NOTEBOOK = TASK / '02-rt-cv-detection-and-tracking.ipynb'
 cells = json.loads(NOTEBOOK.read_text())['cells']
 EXPECTED_NOTEBOOKS = 6    # part1: 00-onboarding, 01 to 04, assessment (00_Home.ipynb is not counted)
 
@@ -164,7 +164,7 @@ class RecordingTests(unittest.TestCase):
         self.assertNotIn('try:', source)
 
     def test_all_notebook_python_cells_parse_and_outputs_are_clear(self):
-        notebooks = sorted(TASK.glob('part1/*.ipynb'))
+        notebooks = sorted(p for p in TASK.glob('*.ipynb') if p.name != '00_Home.ipynb')
         self.assertEqual(len(notebooks), EXPECTED_NOTEBOOKS,
                          'notebook count changed; update EXPECTED_NOTEBOOKS: ' + ', '.join(p.name for p in notebooks))
         for path in notebooks:

@@ -3,7 +3,7 @@ import runpy
 from pathlib import Path
 from unittest.mock import patch
 
-MODULE = Path(__file__).resolve().parents[1] / 'lab/task/part1/course_runtime.py'
+MODULE = Path(__file__).resolve().parents[1] / 'notebooks/course_runtime.py'
 
 
 def test_container_defaults():
@@ -19,3 +19,11 @@ def test_host_config_and_override():
             config = runpy.run_path(str(MODULE))
         assert config['BASE'] == expected
         assert config['GRADE_URL'] == expected + '/assessment/grade/part1'
+
+
+def test_paths_follow_checkout():
+    with patch.dict('os.environ', {}, clear=True), patch.object(Path, 'is_file', return_value=False):
+        config = runpy.run_path(str(MODULE))
+    assert config['TASK_ROOT'] == MODULE.parent
+    assert config['DATA_DIR'] == MODULE.parent / 'data'
+    assert config['PREP_DIR'] == MODULE.parent.parent / 'deployment/prep'

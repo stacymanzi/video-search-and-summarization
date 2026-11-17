@@ -21,9 +21,12 @@ task/workspaces
 
 # Learner output created on a devbox (never commit): notebook work, the Part 1
 # assessment's answers and clip, the coding agent's files (work/agent/).
-lab/task/work/
+notebooks/work/
 .pytest_cache/
 
 # Root-owned leftover from old vss-smart-cities lab containers; cannot delete
 # without sudo, hidden here so it stays out of git status.
 lab-2-sdg/
+
+# Local credentials
+env.dev

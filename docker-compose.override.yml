@@ -5,33 +5,31 @@
 services:
 
   lab:
-    # Build context is the repo root (not lab/): the assessment files, Dockerfile.assessment
+    # Build context is the repo root (not deployment/): the assessment files, Dockerfile.assessment
     # and entrypoint.assessment.sh all live at the root level.
     build:
       context: .
-      dockerfile: lab/Dockerfile
+      dockerfile: deployment/Dockerfile
     volumes:
       # Bind the working copy so notebook edits are visible without a rebuild.
-      - ./lab/task/:/dli/task/
+      - ./notebooks/:/dli/task/
 
   course-prep:
     build:
       context: .
-      dockerfile: lab/Dockerfile
+      dockerfile: deployment/Dockerfile
     volumes:
       # Same tree the lab sees; course-prep imports course_setup.py from here.
       # It writes only under /dli/task/data (the course_data named volume).
-      - ./lab/task/:/dli/task/
+      - ./notebooks/:/dli/task/
 
   assessment:
     build:
       context: .
       dockerfile: Dockerfile.assessment
     volumes:
-      - ./lab/task/:/dli/task/
+      - ./notebooks/:/dli/task/
       - ./assessment/:/dli/assessment/
-    ports:
-      - ${DEV_ASSESSMENT_PORT:-18080}:8080
 
   nginx:
     # Defaults to 80:80 (Brev). Override for local dev if port 80 is taken:

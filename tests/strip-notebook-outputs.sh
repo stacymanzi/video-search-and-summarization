@@ -6,11 +6,11 @@
 #   tests/strip-notebook-outputs.sh            # rewrite dirty notebooks in place
 #   tests/strip-notebook-outputs.sh --check    # CI gate: list them, exit 1, change nothing
 #
-# Covers every *.ipynb under task1/lab/task: 00_Home.ipynb and
+# Covers every *.ipynb under task1/notebooks: 00_Home.ipynb and
 # part1/*.ipynb today, plus anything added later, skipping
 # .ipynb_checkpoints/ and work/ (learner output on a devbox).
 #
-# Run this BEFORE committing anything under task1/lab/task/. That directory is
+# Run this BEFORE committing anything under task1/notebooks/. That directory is
 # bind-mounted into the lab container at /dli/task, so any notebook a learner
 # (or you) runs in JupyterLab writes its output straight back into this repo.
 # `git add` then sweeps up megabytes of base64 images and video, and ships
@@ -21,7 +21,7 @@
 # and nbformat 4.5 pass through untouched.
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "$0")/../lab/task" && pwd)"
+ROOT="$(cd "$(dirname "$0")/../notebooks" && pwd)"
 MODE="${1:-fix}"
 case "${MODE}" in
     fix) ;;

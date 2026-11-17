@@ -16,16 +16,16 @@ import unittest
 from datetime import datetime, timedelta
 from pathlib import Path
 
-TASK = Path(__file__).resolve().parents[1] / "lab/task"
-PART1 = TASK / "part1"
+TASK = Path(__file__).resolve().parents[1] / "notebooks"
+PART1 = TASK
 NOTEBOOK = PART1 / "04-rt-embed-video-search.ipynb"
 CAPTIONING = "03-rt-vlm-captioning-and-prompting.ipynb"
-PREP_SCRIPT = Path(__file__).resolve().parents[1] / "lab/prep/prepare_course.py"   # /dli/prep/prepare_course.py in the image
-DOCKERFILE = Path(__file__).resolve().parents[1] / "lab/Dockerfile"
+PREP_SCRIPT = Path(__file__).resolve().parents[1] / "deployment/prep/prepare_course.py"   # /dli/prep/prepare_course.py in the image
+DOCKERFILE = Path(__file__).resolve().parents[1] / "deployment/Dockerfile"
 
 # The RT-VLM and RT-Embed notebooks, built from the old captioning, prompt-comparison and video-search notebooks.
 REVIEWED = (CAPTIONING, NOTEBOOK.name)
-HEADER = '<img src="../images/nvidia_header.png"'
+HEADER = '<img src="images/nvidia_header.png"'
 RETIRED_NAMES = ("Cosmos " + "Reason", "Cosmos 3 " + "Reasoner")   # the RT-VLM model is "Cosmos 3 Super Reasoner"
 
 
@@ -160,7 +160,7 @@ class SearchCollectionTests(unittest.TestCase):
         self.assertEqual([c["id"] for c in tagged], ["05-instructor-prep"])
         source = text(tagged[0])
         self.assertIn("import prepare_course", source)
-        self.assertNotIn("def prepare_search_collection(", source, "one implementation: task1/lab/prep/prepare_course.py")
+        self.assertNotIn("def prepare_search_collection(", source, "one implementation: task1/deployment/prep/prepare_course.py")
         self.assertIsNone(re.search(r"^\s*(\w+\s*=\s*)?prepare_search_collection\(", source, re.M),
                           "the instructor-only cell imports the function and calls nothing")
         self.assertNotIn("ingest_file(", text(by_id(NOTEBOOK.name, "05-collection-02")),
@@ -168,7 +168,7 @@ class SearchCollectionTests(unittest.TestCase):
         # The script the cell imports defines the function at module level and ships in the image at /dli/prep.
         prep = ast.parse(PREP_SCRIPT.read_text())
         self.assertIn("prepare_search_collection", [n.name for n in prep.body if isinstance(n, ast.FunctionDef)])
-        self.assertIn("COPY lab/prep /dli/prep", DOCKERFILE.read_text())
+        self.assertIn("COPY deployment/prep /dli/prep", DOCKERFILE.read_text())
         # Executed against a stand-in module, the cell binds the function and runs nothing.
         calls, fake = [], types.ModuleType("prepare_course")
         fake.__file__ = "/dli/prep/prepare_course.py"
@@ -323,7 +323,7 @@ class PreparationGateTests(unittest.TestCase):
                 (task / "data/course_prep_status.json").write_text(json.dumps(status))
             if registry is not None:
                 (task / "data/search_sources.json").write_text(json.dumps(registry))
-            patched = code.replace('Path("/dli/task")', f"Path({str(task)!r})")
+            patched = code.replace('TASK = TASK_ROOT', f"TASK = Path({str(task)!r})")
             self.assertNotEqual(patched, code, "the cell no longer names /dli/task literally")
             requests_module = fake_requests(sensor_ids)
             ns, out, error = {}, io.StringIO(), None

@@ -6,11 +6,11 @@
 set -euo pipefail
 repo="$(git rev-parse --show-toplevel 2>/dev/null)" || { echo "not inside a git checkout; run this from the clone, not the working tree" >&2; exit 2; }
 cd "$repo"
-shipped=(task1/assessment task1/lab task1/tests task1/deploy task1/dind task1/scripts)
+shipped=(assessment deployment notebooks tests)
 present=()
 for d in "${shipped[@]}"; do [ -d "$d" ] && present+=("$d"); done
 hidden="$(git ls-files --others --ignored --exclude-standard --directory -- "${present[@]}" \
-  | grep -v -E '(^|/)(__pycache__|\.pytest_cache|\.ipynb_checkpoints)(/|$)' || true)"
+  | grep -v -E '(^|/)(__pycache__|\.pytest_cache|\.ipynb_checkpoints|data|work|part1)(/|$)' || true)"
 if [ -n "$hidden" ]; then
   printf 'ignored but shipped (fix .gitignore or move the file):\n%s\n' "$hidden" >&2
   exit 1

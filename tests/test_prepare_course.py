@@ -18,12 +18,12 @@ from pathlib import Path
 from unittest import mock
 
 TASK1 = Path(__file__).resolve().parents[1]
-PREP_SCRIPT = TASK1 / "lab/prep/prepare_course.py"   # /dli/prep/prepare_course.py in the image
-MANIFEST = TASK1 / "lab/task/search-videos.json"      # /dli/task/search-videos.json in the image
+PREP_SCRIPT = TASK1 / "deployment/prep/prepare_course.py"   # /dli/prep/prepare_course.py in the image
+MANIFEST = TASK1 / "notebooks/search-videos.json"      # /dli/task/search-videos.json in the image
 SEARCH_CLIPS = [item["filename"] for item in json.loads(MANIFEST.read_text())]
 
 # The script imports course_setup from <COURSE_PREP_TASK_DIR>/part1 at import time.
-os.environ["COURSE_PREP_TASK_DIR"] = str(TASK1 / "lab/task")
+os.environ["COURSE_PREP_TASK_DIR"] = str(TASK1 / "notebooks")
 _spec = importlib.util.spec_from_file_location("prepare_course", PREP_SCRIPT)
 prep = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(prep)

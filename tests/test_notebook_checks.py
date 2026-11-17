@@ -1,9 +1,9 @@
-"""Offline checks for the Part 1 notebooks (task1/lab/task/part1) and the Home notebook, and the one rule that
+"""Offline checks for the Part 1 notebooks (task1/notebooks) and the Home notebook, and the one rule that
 the coding agent's lab context file (docs/_static/vss-lab-context.txt) shares with notebook 3: RT-VLM's frames.
 
 Run from the repo root or inside the lab:  python3 -I task1/tests/test_notebook_checks.py
 NOTEBOOK_ROOT overrides the part1 directory. The default is /dli/task/part1 when it exists (the lab
-image, and CI, which symlinks /dli/task), otherwise task1/lab/task/part1 next to this file.
+image, and CI, which symlinks /dli/task), otherwise task1/notebooks next to this file.
 
 The platform-touching cells are exercised by id with every I/O mocked (requests, docker, the clock,
 the status files), so nothing here needs the stack, and no executed outputs are ever stored. Needs
@@ -30,13 +30,13 @@ try:
 except ImportError:  # a bare interpreter; the lab image and CI carry it
     nbformat = None
 
-_LAB_ROOT = Path('/dli/task/part1')
+_LAB_ROOT = Path('/dli/task')
 ROOT = Path(os.environ.get('NOTEBOOK_ROOT') or (
-    _LAB_ROOT if _LAB_ROOT.is_dir() else Path(__file__).resolve().parents[1] / 'lab/task/part1'))
-TASK = ROOT.parent                      # /dli/task: course_path.json paths are relative to it
+    _LAB_ROOT if _LAB_ROOT.is_dir() else Path(__file__).resolve().parents[1] / 'notebooks'))
+TASK = ROOT                      # /dli/task: course_path.json paths are relative to it
 HOME = TASK / '00_Home.ipynb'
 PATH_FILE = ROOT / 'course_path.json'
-PART1_NOTEBOOKS = sorted(ROOT.glob('*.ipynb'))
+PART1_NOTEBOOKS = sorted(p for p in ROOT.glob('*.ipynb') if p.name != '00_Home.ipynb')
 
 NB00 = '00-onboarding.ipynb'
 NB01 = '01-inspect-vss-deployment.ipynb'
@@ -452,10 +452,10 @@ class NotebookChecks(unittest.TestCase):
         shipped = []
         for folder, dirs, files in os.walk(TASK):
             # data/ (course data in the lab) and work/ (learner output) are not shipped content
-            dirs[:] = [d for d in dirs if d not in ('data', 'work', '.ipynb_checkpoints', '__pycache__')]
+            dirs[:] = [d for d in dirs if d not in ('data', 'work', '.ipynb_checkpoints', '__pycache__', 'part1')]
             shipped += [(Path(folder) / f).relative_to(TASK).as_posix() for f in files if f.endswith('.ipynb')]
-        # remix/00_Home.ipynb is the alternate Home page (lab/task/remix/); it ships beside the original.
-        self.assertEqual(sorted(shipped), sorted(['00_Home.ipynb', 'remix/00_Home.ipynb'] + [f'part1/{name}' for name in TITLES]))
+        # remix/00_Home.ipynb is the alternate Home page (notebooks/remix/); it ships beside the original.
+        self.assertEqual(sorted(shipped), sorted(['00_Home.ipynb'] + list(TITLES)))
 
     def test_nothing_links_the_retired_agent_notebook(self):
         """VSS Coding Agent Skills is a Course Docs page now; no notebook, Home or START_HERE.md still names the
@@ -520,7 +520,7 @@ class NotebookChecks(unittest.TestCase):
     def test_titles_match_the_course_path(self):
         """Each step's title in part1/course_path.json is the title its notebook opens with."""
         steps = [s for s in json.loads(PATH_FILE.read_text())['steps'] if s.get('path')]
-        self.assertEqual(sorted(s['path'] for s in steps), sorted(f'part1/{name}' for name in TITLES))
+        self.assertEqual(sorted(s['path'] for s in steps), sorted(TITLES))
         for step in steps:
             with self.subTest(step=step['id']):
                 self.assertEqual(first_line(notebook(TASK / step['path'])['cells'][1]), '# ' + step['title'])

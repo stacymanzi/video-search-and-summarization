@@ -19,7 +19,7 @@ from http.server import ThreadingHTTPServer
 OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))   # a CI runner's http_proxy must not catch 127.0.0.1
 
 TASK1 = pathlib.Path(__file__).resolve().parents[1]
-TASK = TASK1 / "lab" / "task"
+TASK = TASK1 / "notebooks"
 sys.path.insert(0, str(TASK))
 
 import lab_home  # noqa: E402
@@ -32,9 +32,9 @@ class CourseFolder(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         root = pathlib.Path(self.tmp.name)
         self.task_root = root / "task"
-        (self.task_root / "part1").mkdir(parents=True)
+        (self.task_root).mkdir(parents=True)
         (self.task_root / "data").mkdir()
-        shutil.copy(TASK / "part1" / "course_path.json", self.task_root / "part1" / "course_path.json")
+        shutil.copy(TASK / "course_path.json", self.task_root / "course_path.json")
         self.results = root / "results"
         self.results.mkdir()
         self.saved = {k: os.environ.get(k) for k in ("LAB_HOME_TASK_ROOT", "LAB_HOME_RESULTS_DIR")}
@@ -83,7 +83,7 @@ class Payload(CourseFolder):
         nb = {"cells": [{"cell_type": "code", "id": "03-ex3-check", "execution_count": 7, "metadata": {},
                          "outputs": [{"output_type": "stream", "name": "stdout", "text": ["track 12\n"]}], "source": []}],
               "metadata": {}, "nbformat": 4, "nbformat_minor": 5}
-        (self.task_root / "part1" / "02-rt-cv-detection-and-tracking.ipynb").write_text(json.dumps(nb))
+        (self.task_root / "02-rt-cv-detection-and-tracking.ipynb").write_text(json.dumps(nb))
         c = lab_home.course_payload()
         self.assertEqual((c["current"]["id"], c["current"]["k"]), ("nb3", 4))
         self.assertEqual(c["done_count"], 3)            # onboarding, nb1, nb2
@@ -104,10 +104,10 @@ class Payload(CourseFolder):
         c = lab_home.course_payload()
         self.assertEqual(c["done_count"], 7)
         lunch = next(s for s in c["steps"] if s["kind"] == "lunch")
-        self.assertIn("STOP TASK for Part 1 and START for Part 2", lunch["summary"])   # the bar's text once every step is done
+        self.assertIn("Save your notebooks", lunch["summary"])   # the bar's text once every step is done
 
     def test_a_broken_path_file_is_reported_not_fatal(self):
-        (self.task_root / "part1" / "course_path.json").write_text("{not json")
+        (self.task_root / "course_path.json").write_text("{not json")
         c = lab_home.course_payload()
         self.assertIn("JSONDecodeError", c["error"])
 
@@ -157,8 +157,8 @@ class Server(CourseFolder):
         self.assertIn('s.kind === "assessment"', js)                      # the chips come from the path, not a fixed list
         self.assertIn('s.kind === "lunch"', js)                           # the reminder to save before lunch
         # Before the Part 2 launch button (the all-done text, the lunch toast): click ASSESS TASK first.
-        self.assertIn("click ASSESS TASK on the course page if you have not done so yet", js)
-        self.assertIn("If you have not done so yet, click ASSESS TASK on the course page.", js)
+        self.assertIn("Before continuing, check your assessment result.", js)
+        self.assertIn("Your assessment result is saved by the Submit cell.", js)
         self.assertIn("and run its Submit cell.", js)                     # also right when nothing was submitted yet
         self.assertIn("(Ctrl+S, or Cmd+S on a Mac)", js)
         for old in ('"a1"', "A1", "certificate", "Every step has its evidence", "and submit again", "check named at the end"):
@@ -188,7 +188,7 @@ class Wiring(unittest.TestCase):
         self.assertNotIn("sub_filter", conf.replace(lab, ""))               # only /lab is filtered
 
     def test_entrypoint_starts_the_server_before_jupyter(self):
-        sh = (TASK1 / "lab" / "entrypoint.sh").read_text()
+        sh = (TASK1 / "deployment" / "entrypoint.sh").read_text()
         self.assertLess(sh.index("lab_home.py --serve --port 8050"), sh.index("exec jupyter lab"))
         self.assertIn("/var/log/lab_home.log", sh)
         loop = sh[sh.index("( set +e"): sh.index("done )")]                # the loop inherits set -e; it must switch it off
@@ -212,7 +212,7 @@ class Wiring(unittest.TestCase):
     def test_the_lab_pill_waits_for_what_the_readiness_check_requires(self):
         # An extra check here (Kibana, NVStreamer, the VIOS UI) would keep the pill amber on a lab that the
         # readiness check in onboarding (o0-gate) calls ready, and the "Lab ready" toast would never come.
-        nb = json.loads((TASK / "part1" / "00-onboarding.ipynb").read_text())
+        nb = json.loads((TASK / "00-onboarding.ipynb").read_text())
         gate = "".join(next(c for c in nb["cells"] if c["id"] == "o0-gate")["source"])
         values = {}
         for node in ast.parse(gate).body:

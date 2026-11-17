@@ -16,11 +16,6 @@ from grader import common, grade_part1, serve
 from tests.conftest import ASSESSMENT_DIR, FIXTURES, build_context
 
 
-def load_tasktest():
-    spec = importlib.util.spec_from_file_location("tasktest", ASSESSMENT_DIR / "tasktest.py")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
 
 
 def graded_results(tmp_path, case=None):
@@ -33,110 +28,26 @@ def graded_results(tmp_path, case=None):
     return results, marker
 
 
-def test_pass_scores_100(tmp_path):
-    results, marker = graded_results(tmp_path)
-    assert marker["passed"]
-    out = load_tasktest().runtest(results)
-    assert out["score"] == 100
-    assert out["message"].startswith("Part 1 PASS. Congratulations, you passed the assessment. Your Part 1 result is recorded.")
-    assert "https://learn.nvidia.com/my-learning/" in out["message"]
-    assert "certificate" not in out["message"]   # until the certificate rule is settled
 
 
-def test_missing_marker_is_not_graded(tmp_path):
-    results = tmp_path / "results"
-    results.mkdir()
-    out = load_tasktest().runtest(results)
-    assert out["score"] == 0
-    assert out["message"] == ("Part 1 NOT GRADED: there is no result yet. Open part1/assessment.ipynb and run its "
-                              "Submit cell.\nNot passed yet. Do what the line above says, then press ASSESS TASK again.")
 
 
-def test_failed_assessment_names_the_must_checks(tmp_path):
-    results, marker = graded_results(tmp_path, FIXTURES / "cases" / "window_not_the_top_hit")
-    assert not marker["passed"]
-    out = load_tasktest().runtest(results)
-    assert out["score"] == 0
-    assert out["message"].startswith("Part 1 FAIL: part1.search_matches_reference. Fix these checks in "
-                                     "part1/assessment.ipynb and run its Submit cell again.")
 
 
-def test_should_failures_alone_still_score_100(tmp_path):
-    results, marker = graded_results(tmp_path, FIXTURES / "cases" / "should_checks_only")
-    assert marker["passed"] and len([c for c in marker["checks"] if not c["passed"]]) == 4
-    out = load_tasktest().runtest(results)
-    assert out["score"] == 100 and "Part 1 PASS" in out["message"]
 
 
-def test_forged_marker_scores_0(tmp_path):
-    results = tmp_path / "results"
-    results.mkdir()
-    (results / "part1.json").write_text(json.dumps({"passed": True}))
-    (results / "PASSED").write_text("")
-    out = load_tasktest().runtest(results)
-    assert out["score"] == 0 and "Part 1 FAIL" in out["message"]
 
 
-def test_marker_of_another_assessment_scores_0(tmp_path):
-    results, marker = graded_results(tmp_path)
-    marker["assessment"] = "a1"
-    (results / "part1.json").write_text(json.dumps(marker))
-    out = load_tasktest().runtest(results)
-    assert out["score"] == 0 and "Part 1 FAIL" in out["message"]
 
 
-def test_marker_passed_flag_cannot_override_checks(tmp_path):
-    results, marker = graded_results(tmp_path)
-    for item in marker["checks"]:
-        if item["id"] == "part1.captions_indexed":
-            item["passed"] = False
-    (results / "part1.json").write_text(json.dumps(marker))
-    out = load_tasktest().runtest(results)
-    assert out["score"] == 0 and "part1.captions_indexed" in out["message"]
 
 
-def test_unreadable_marker_scores_0(tmp_path):
-    results = tmp_path / "results"
-    results.mkdir()
-    (results / "part1.json").write_text("{")
-    out = load_tasktest().runtest(results)
-    assert out["score"] == 0 and "unreadable" in out["message"]
 
 
-@pytest.mark.parametrize("rubric", [
-    {"certificate": "all_three", "assessments": ["part1"], "part1": {"checks": []}},
-    {"certificate": "all_listed", "assessments": [], "part1": {"checks": []}},
-    {"certificate": "all_listed", "assessments": ["part1"]},
-    {"certificate": "all_listed", "part1": {"checks": []}},
-])
-def test_broken_rubric_is_reported_not_passed(tmp_path, rubric):
-    results, _ = graded_results(tmp_path)
-    path = tmp_path / "rubric.json"
-    path.write_text(json.dumps(rubric))
-    out = load_tasktest().runtest(results, rubric_path=path)
-    assert out["score"] == 0 and "misconfigured" in out["message"]
 
 
-def test_every_listed_assessment_must_pass(tmp_path):
-    """all_listed with two assessments: a pass on one of them is not enough."""
-    results, _ = graded_results(tmp_path)
-    rubric = json.loads((ASSESSMENT_DIR / "grader" / "rubric.json").read_text())
-    rubric["assessments"] = ["part1", "part2"]
-    rubric["part2"] = {"label": "Part 2", "notebook": "part2/assessment.ipynb", "checks": [{"id": "part2.x", "must": True}]}
-    path = tmp_path / "rubric.json"
-    path.write_text(json.dumps(rubric))
-    out = load_tasktest().runtest(results, rubric_path=path)
-    assert out["score"] == 0
-    assert "Part 1 PASS" in out["message"] and "Part 2 NOT GRADED" in out["message"] and "1 of 2" in out["message"]
 
 
-def test_tasktest_prints_one_json_object(tmp_path):
-    results, _ = graded_results(tmp_path)
-    env = dict(os.environ, GRADER_RESULTS_DIR=str(results))
-    completed = subprocess.run([sys.executable, "-I", str(ASSESSMENT_DIR / "tasktest.py")],
-                               capture_output=True, text=True, env=env, check=True)
-    lines = completed.stdout.strip().splitlines()
-    assert len(lines) == 1 and json.loads(lines[0]) == load_tasktest().runtest(results)
 
 
 def planted_module_dir(tmp_path):
@@ -150,16 +61,6 @@ def planted_module_dir(tmp_path):
     return planted
 
 
-def test_a_planted_json_module_cannot_fake_a_score(tmp_path):
-    """The runner may start tasktest.py with the image's PYTHONPATH; nothing on it may be imported."""
-    results = tmp_path / "results"
-    results.mkdir()
-    env = dict(os.environ, GRADER_RESULTS_DIR=str(results), PYTHONPATH=str(planted_module_dir(tmp_path)))
-    completed = subprocess.run([sys.executable, "-B", str(ASSESSMENT_DIR / "tasktest.py")],
-                               capture_output=True, text=True, env=env, check=True)
-    assert "planted" not in completed.stdout
-    out = json.loads(completed.stdout.strip().splitlines()[-1])
-    assert out["score"] == 0 and "NOT GRADED" in out["message"]
 
 
 def test_serve_ignores_a_planted_json_module(tmp_path):

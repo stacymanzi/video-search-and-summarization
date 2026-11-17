@@ -49,7 +49,7 @@ VIOS_URL = BASE + "/vios/vst/api/v1"
 ES_URL = BASE + "/es"
 RT_EMBED_URL = BASE + "/rtvi-embed/v1"
 
-# Elasticsearch and RT-Embed names, as task1/lab/task/part1/course_setup.py and the notebooks use them.
+# Elasticsearch and RT-Embed names, as task1/notebooks/course_setup.py and the notebooks use them.
 RAW_INDEX = "mdx-raw-2025-01-01"                 # RT-CV frame records of uploaded files; sensorId.keyword is the file stem
 EMBED_INDEX = "mdx-embed-filtered-2025-01-01"    # RT-Embed chunk embeddings of uploaded files; sensor.id.keyword is the VIOS id
 EMBED_MODEL = "cosmos-embed1-448p-anomaly-detection"   # the Cosmos-Embed1 model id RT-Embed serves

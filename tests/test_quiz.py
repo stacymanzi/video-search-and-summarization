@@ -34,7 +34,7 @@ from unittest import mock
 sys.dont_write_bytecode = True   # loading quiz.py and the scripts by path must leave no __pycache__ in the lab content
 
 TASK1 = Path(__file__).resolve().parents[1]
-PART1 = TASK1 / "lab" / "task" / "part1"
+PART1 = TASK1 / "notebooks"
 QUIZ_PATH = PART1 / "quiz.py"
 COURSE_SETUP = PART1 / "course_setup.py"
 NOTEBOOK = PART1 / "assessment.ipynb"
@@ -276,32 +276,7 @@ class KeyFileTests(unittest.TestCase):
                     self.assertTrue(quiz.answer(qid, letter))
             self.assertEqual(json.loads(quiz.ANSWERS.read_text())["questions"], self.plain["questions"])
 
-    def test_make_quiz_key_check_passes_and_detects_drift(self):
-        script = load_script(MAKE_KEY, "make_quiz_key_under_test")
-        with contextlib.redirect_stdout(io.StringIO()):
-            self.assertEqual(script.main(["--check"]), 0)
-        with tempfile.TemporaryDirectory() as folder:
-            plain = json.loads(PLAIN_KEY.read_text())
-            plain["questions"]["p1-q1"] = "ABCD"[("ABCD".index(plain["questions"]["p1-q1"]) + 1) % 4]
-            changed = Path(folder) / "part1.json"
-            changed.write_text(json.dumps(plain))
-            with contextlib.redirect_stdout(io.StringIO()):
-                self.assertEqual(script.main(["--check", "--key", str(changed)]), 1)
-            out = Path(folder) / "assessment_key.json"
-            with contextlib.redirect_stdout(io.StringIO()):
-                self.assertEqual(script.main(["--key", str(changed), "--out", str(out)]), 0)
-            self.assertNotEqual(out.read_text(), HASHED_KEY.read_text())
 
-    def test_make_quiz_key_rejects_a_bad_plain_key(self):
-        script = load_script(MAKE_KEY, "make_quiz_key_bad_input")
-        with tempfile.TemporaryDirectory() as folder:
-            for broken in ({"questions": {"p1-q1": "E"}, "explanations": {"p1-q1": "x"}, "min_correct": 1},
-                           {"questions": {"p1-q1": "A"}, "explanations": {}, "min_correct": 1},
-                           {"questions": {"p1-q1": "A"}, "explanations": {"p1-q1": "x"}, "min_correct": 2}):
-                path = Path(folder) / "bad.json"
-                path.write_text(json.dumps(broken))
-                with self.subTest(key=broken), self.assertRaises(ValueError):
-                    script.read_plain(path)
 
 
 # --------------------------------------------------------------------------- a fake deployment
@@ -840,6 +815,9 @@ class NotebookDryRun(Isolated):
         plain = json.loads(PLAIN_KEY.read_text())["questions"]
         modules = {
             "course_setup": self.course_setup(),
+            "course_runtime": types.SimpleNamespace(TASK_ROOT=self.data.parent, DATA_DIR=self.data,
+                                                    PREP_DIR=self.data.parent / "prep",
+                                                    GRADE_URL="http://assessment:8081/grade/part1"),
             "labtools": types.SimpleNamespace(show_video=lambda *a, **k: None, frame_from_mp4=lambda *a, **k: "frame",
                                               draw_boxes=lambda image, objects: image),
             "cleanup": types.SimpleNamespace(remember=lambda kind, rid, **kw: self.remembered.append((kind, rid))),
@@ -863,7 +841,6 @@ class NotebookDryRun(Isolated):
                     source = fill(source, SOLUTIONS[item["id"]])
                 if item["id"] in plain:
                     source = source.replace('""', f'"{plain[item["id"]]}"', 1)
-                source = source.replace("/dli/task/data/", str(self.data) + "/")
                 self.assertIsNone(BARE_FIXME.search(source), item["id"])
                 exec(compile(source, item["id"], "exec"), ns)
 

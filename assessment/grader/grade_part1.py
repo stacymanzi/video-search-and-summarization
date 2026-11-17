@@ -1,4 +1,4 @@
-"""grade_part1.py: the Part 1 assessment (task1/lab/task/part1/assessment.ipynb).
+"""grade_part1.py: the Part 1 assessment (task1/notebooks/assessment.ipynb).
 
 The notebook's task cells write their results to
 ``/dli/task/work/assessment/answers.json`` (shape: ``schemas/answers.schema.json``).

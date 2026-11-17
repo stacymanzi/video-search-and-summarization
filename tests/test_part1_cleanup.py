@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-MODULE = Path(__file__).resolve().parents[1] / 'lab/task/part1/cleanup.py'
+MODULE = Path(__file__).resolve().parents[1] / 'notebooks/cleanup.py'
 spec = importlib.util.spec_from_file_location('course_cleanup', MODULE)
 cleanup = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(cleanup)
@@ -67,6 +67,36 @@ class CleanupTests(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 worker.run(confirm=True)
             api.assert_not_called()
+
+    def test_sensors_ignore_only_removed_tombstones(self):
+        worker = cleanup.Cleanup(ledger=self.ledger)
+        records = [{'sensorId': state, 'state': state}
+                   for state in ('removed', 'online', 'offline', 'error')]
+        with patch.object(worker, 'api', return_value=records):
+            self.assertEqual(set(worker.sensors()), {'online', 'offline', 'error'})
+            self.assertEqual(set(worker.sensors('/nvstreamer')), {'online', 'offline', 'error'})
+
+    def test_removed_live_sensor_skips_agent_delete_but_cleans_storage(self):
+        self.remember('live', 'owned', name='Camera_1')
+        worker = cleanup.Cleanup(ledger=self.ledger)
+        with patch.object(worker, 'api', return_value=[
+                {'sensorId': 'owned', 'name': 'Camera_1', 'state': 'removed'}]) as api, \
+             patch.object(worker, 'remove_storage') as storage, \
+             patch.object(worker, 'remove_metadata') as metadata, \
+             patch.object(worker, 'verify'), \
+             patch.object(worker, 'clear_saved_results'), \
+             patch.object(cleanup.time, 'sleep'):
+            worker.run(confirm=True)
+        self.assertFalse(any(call.args[0] == 'DELETE' for call in api.call_args_list))
+        storage.assert_called_once()
+        metadata.assert_called_once()
+
+    def test_live_cleanup_does_not_rewrite_video_registry(self):
+        self.remember('live', 'owned', name='Camera_1')
+        registry = self.ledger.parent / 'search_sources.json'
+        registry.write_text('{"keep": {"sensor_id": "video"}}')
+        with patch.object(Path, 'write_text', side_effect=AssertionError('Unexpected write')):
+            cleanup.Cleanup(ledger=self.ledger).clear_saved_results()
 
     def test_clear_pointers_preserves_other_exercises_and_input_files(self):
         self.remember(name='traffic_short')

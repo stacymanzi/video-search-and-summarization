@@ -7,8 +7,7 @@ key and ground truth present, results directory writable) and whether
 course-prep's registry of the search clips exists yet.
 
 Listens on 8081 (``GRADER_PORT``). The lab reaches it as
-``http://assessment:8081`` over the compose network; the LMS never calls this
-port, it calls the Go runner on 8080, which executes ``tasktest.py``.
+``http://assessment:8081`` over the compose network or the nginx proxy.
 
 One grading run at a time: a second POST while one is in progress gets 409.
 A grader that crashes still produces a marker, with every check failed and the

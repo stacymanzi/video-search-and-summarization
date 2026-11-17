@@ -19,7 +19,7 @@ from tests.conftest import ASSESSMENT_DIR, FIXTURES
 
 ENTRYPOINT = ASSESSMENT_DIR.parent / "entrypoint.assessment.sh"
 ANSWER_KEY = common.ANSWER_KEYS_DIR / "part1.json"
-LAB_PART1 = ASSESSMENT_DIR.parent / "lab" / "task" / "part1"   # absent inside the assessment image
+LAB_PART1 = ASSESSMENT_DIR.parent / "notebooks"   # absent inside the assessment image
 
 # The check ids and their level: T1, T2, T4, the T5 search and the questions decide.
 EXPECTED_CHECKS = {
@@ -183,17 +183,11 @@ def test_fixture_dirs_survive_git():
     assert not names & {"data", "models", "results"}
 
 
-def test_entrypoint_clears_every_marker():
+def test_entrypoint_preserves_markers_and_isolates_grader():
     script = ENTRYPOINT.read_text(encoding="utf-8")
-    assert 'rm -f "${RESULTS}"/*.json "${RESULTS}"/PASSED' in script
-    assert "a1.json" not in script and "/grade/part1" in script
-
-
-def test_entrypoint_starts_the_grader_without_the_learner_path():
-    """The image's PYTHONPATH names /dli/task/part1, which the lab can write: neither process may inherit it."""
-    lines = [line.strip() for line in ENTRYPOINT.read_text(encoding="utf-8").splitlines()]
-    assert "unset PYTHONPATH" in lines
-    assert lines.index("unset PYTHONPATH") < lines.index("python3 grader/serve.py &") < lines.index("./assessment_runner &")
+    assert "rm -f" not in script
+    assert "unset PYTHONPATH" in script
+    assert "exec python3 -I /dli/assessment/grader/serve.py" in script
 
 
 def load_lab_module(name: str):
