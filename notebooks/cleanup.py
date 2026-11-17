@@ -15,6 +15,10 @@ from course_runtime import BASE, DATA_DIR
 LEDGER = DATA_DIR / 'part1_resources.json'
 
 
+class StoragePending(RuntimeError):
+    """A stopped recorder still has files or timeline entries to remove."""
+
+
 class MetadataPending(RuntimeError):
     """A stopped producer's queued records are still reaching Elasticsearch."""
 
@@ -48,6 +52,8 @@ class Cleanup:
                 raise ValueError('Invalid resource ID in cleanup ledger')
             if r['kind'] in {'video', 'live'} and not r['name']:
                 raise ValueError('Source name missing from cleanup ledger')
+            if r.get('stream_id') and any(c in r['stream_id'] for c in '*?/#'):
+                raise ValueError('Invalid stream ID in cleanup ledger')
             if r['kind'] == 'caption':
                 UUID(r['id'])  # Caption index deletion must name exactly one UUID.
 
@@ -55,7 +61,10 @@ class Cleanup:
         response = self.session.request(method, self.base + path, timeout=120, **kwargs)
         response.raise_for_status()
         data = response.json() if response.content else None
+        if data is False:
+            raise RuntimeError(f'{method} {path}: operation returned false')
         if isinstance(data, dict) and (data.get('error_code') or
+                data.get('protectedFiles') or data.get('invalidFiles') or
                 data.get('status') in {'partial', 'failure', 'error'} or
                 data.get('deleted') is False):
             raise RuntimeError(f'{method} {path}: {data}')
@@ -109,7 +118,31 @@ class Cleanup:
         if resource['id'] in self.sensors():
             self.api('DELETE', '/vios/vst/api/v1/sensor/' + rid)
 
+    def storage_files(self, resource):
+        """List only files attributed by VIOS to this ledger's sensor/stream IDs."""
+        paths = set()
+        for stream in sorted({resource['id'], resource['stream_id']} - {''}):
+            rows = self.api('GET', '/vios/vst/api/v1/storage/file/' +
+                            quote(stream, safe='') + '/list') or {}
+            if not isinstance(rows, dict) or set(rows) - {resource['id'], resource['stream_id']}:
+                raise RuntimeError('Unexpected storage ownership response; refusing to delete files.')
+            for entries in rows.values():
+                for entry in entries:
+                    path = entry.get('mediaFilePath')
+                    if not isinstance(path, str) or not path.startswith('/'):
+                        raise RuntimeError('VIOS returned a missing or invalid recording path.')
+                    paths.add(path)
+        return sorted(paths)
+
     def remove_storage(self, resource):
+        if resource['kind'] == 'live':
+            # Live recordings are segment files, not uploaded-file sensors.
+            # Delete the exact paths from the scoped VIOS listing. A timeline
+            # boundary can omit the final segment; never guess a wider window.
+            for path in self.storage_files(resource):
+                self.api('DELETE', '/vios/vst/api/v1/storage/file',
+                         params={'filePath': path})
+            return
         timelines = self.api('GET', '/vios/vst/api/v1/storage/timelines') or {}
         for stream in {resource['id'], resource['stream_id']} - {''}:
             windows = timelines.get(stream, [])
@@ -137,6 +170,13 @@ class Cleanup:
             rid = quote(r['id'], safe='')
             if r['kind'] == 'live':
                 if r['id'] in vios:
+                    if not r['stream_id']:
+                        streams = self.api('GET', '/vios/vst/api/v1/sensor/' + rid + '/streams')
+                        main = [s for s in streams if s.get('isMain') and s.get('streamId')]
+                        if len(main) != 1:
+                            raise RuntimeError('Cannot resolve live main stream; refusing to guess.')
+                        r['stream_id'] = main[0]['streamId']
+                        remember('live', r['id'], name=r['name'], stream_id=r['stream_id'], ledger=self.ledger)
                     self.api('DELETE', '/agent/api/v1/rtsp-streams/delete/' + quote(r['name'], safe=''))
                 self.remove_storage(r)
             elif r['kind'] == 'video':
@@ -170,6 +210,13 @@ class Cleanup:
             time.sleep(5)
             try:
                 self.verify()
+            except StoragePending:
+                clear_checks = 0
+                for r in self.resources:
+                    if r['kind'] in {'live', 'video'}:
+                        self.remove_storage(r)
+                self.remove_metadata()
+                print('Waiting for scoped recordings and queued metadata to drain...')
             except MetadataPending:
                 clear_checks = 0
                 self.remove_metadata()
@@ -179,7 +226,7 @@ class Cleanup:
                 if clear_checks == 2:
                     break
         else:
-            raise MetadataPending('Part 1 metadata is still arriving after 60 seconds; rerun cleanup.')
+            raise RuntimeError('Part 1 cleanup did not converge after 60 seconds. Recordings or metadata remain; rerun cleanup. No clean state was reported.')
         self.clear_saved_results()
         print('Cleanup complete: the resources listed above and their records were removed. VSS is still running.')
         print('Everything else, including the original MP4 files, is untouched.')
@@ -204,7 +251,9 @@ class Cleanup:
                 raise RuntimeError('A Part 1 VIOS source is still registered.')
             if r['kind'] in {'video', 'live'} and (
                     timelines.get(r['id']) or timelines.get(r['stream_id'])):
-                raise RuntimeError('Part 1 recorded footage remains in VIOS.')
+                raise StoragePending(f"Part 1 recorded footage remains in VIOS for {r['id']} / {r['stream_id']}.")
+            if r['kind'] == 'live' and self.storage_files(r):
+                raise StoragePending(f"Part 1 recording files remain in VIOS for {r['id']}.")
             if r['kind'] == 'caption':
                 if r['id'] in caption_ids:
                     raise RuntimeError('A Part 1 RT-VLM file remains.')

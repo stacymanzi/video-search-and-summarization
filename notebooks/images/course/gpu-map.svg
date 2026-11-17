@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="460" viewBox="0 0 960 460" role="img">
+<style>text{font-family:Arial,sans-serif;fill:#193042} .title{font-size:25px;font-weight:bold} .h{font-size:20px;font-weight:bold} .b{font-size:17px} .s{font-size:15px} .box{fill:#fff;stroke:#9bb3c4;stroke-width:2} .arrow{stroke:#4c7189;stroke-width:3;fill:none;marker-end:url(#a)}</style>
+<defs><marker id="a" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8" fill="#4c7189"/></marker></defs>
+<rect width="960" height="460" rx="12" fill="#edf3f7"/>
+<title>Current GPU placement</title>
+<text x="30" y="40" class="title">Current deployment: RTX PRO 6000 Blackwell Server Edition</text>
+<text x="30" y="70" class="b">Two 96 GB GPUs · confirm your hardware and processes with nvidia-smi</text>
+<rect x="30" y="100" width="430" height="240" rx="10" class="box"/>
+<rect x="500" y="100" width="430" height="240" rx="10" class="box"/>
+<text x="50" y="135" class="h">GPU 0</text>
+<text x="520" y="135" class="h">GPU 1</text>
+<rect x="50" y="155" width="390" height="95" rx="8" fill="#d9edbc"/>
+<text x="65" y="184" class="h">RT-VLM · Cosmos 3 Super Reasoner</text>
+<text x="65" y="212" class="b">Configured memory budget: 0.65</text>
+<text x="65" y="236" class="s">Weights + KV cache + working memory</text>
+<text x="65" y="288" class="b">RT-CV · TrafficCamNet RT-DETR</text>
+<text x="65" y="318" class="s">Read process output for actual allocations</text>
+<rect x="520" y="155" width="390" height="95" rx="8" fill="#dceaf8"/>
+<text x="535" y="187" class="h">LLM NIM · Nemotron Nano 9B</text>
+<text x="535" y="223" class="b">RT-Embed · Cosmos-Embed1</text>
+<text x="535" y="288" class="b">Placement is configured, not to scale</text>
+<text x="535" y="318" class="s">Totals do not identify each process's share</text>
+<text x="30" y="379" class="h">Allocated memory is not GPU utilization or stream capacity.</text>
+<text x="30" y="414" class="b">Models can reserve memory while idle. Measure throughput under your workload.</text>
+<text x="30" y="444" class="s">November 17 audit: 97,887 MiB reported per card; exact allocations vary by launch.</text>
+</svg>

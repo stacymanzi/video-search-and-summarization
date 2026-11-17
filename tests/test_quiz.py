@@ -803,7 +803,10 @@ class NotebookDryRun(Isolated):
             Path(args[-1]).write_bytes(b"cut clip")
             return subprocess.CompletedProcess(args, 0, "", "")
         if "kafka-get-offsets" in args:
-            return subprocess.CompletedProcess(args, 0, "mdx-raw:0:50\nmdx-raw:1:0\nmdx-behavior:0:7\n", "")
+            self.assertEqual(args[args.index("--topic") + 1], "mdx-raw")
+            early = args[args.index("--time") + 1] == "-2"
+            raw = b"mdx-raw:0:0\nmdx-raw:1:0\n" if early else b"mdx-raw:0:2\nmdx-raw:1:0\n"
+            return subprocess.CompletedProcess(args, 0, raw, b"")
         if "kafka-console-consumer" in args:
             mark = args[args.index("--formatter-property") + 1].split("=", 1)[1].encode()
             other = dict(self.stack.kafka_frame, sensorId="traffic_short", id="5")

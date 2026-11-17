@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="460" viewBox="0 0 960 460" role="img">
+<style>text{font-family:Arial,sans-serif;fill:#193042} .title{font-size:25px;font-weight:bold} .h{font-size:20px;font-weight:bold} .b{font-size:17px} .s{font-size:15px} .box{fill:#fff;stroke:#9bb3c4;stroke-width:2} .arrow{stroke:#4c7189;stroke-width:3;fill:none;marker-end:url(#a)}</style>
+<defs><marker id="a" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8" fill="#4c7189"/></marker></defs>
+<rect width="960" height="460" rx="12" fill="#edf3f7"/>
+<title>Where course services run</title>
+<text x="30" y="40" class="title">One deployment, two kernel routes</text>
+<rect x="30" y="70" width="420" height="120" rx="10" class="box"/>
+<text x="50" y="102" class="h">Brev host JupyterLab</text>
+<text x="50" y="133" class="b">BASE = http://127.0.0.1:&lt;published port&gt;</text>
+<text x="50" y="163" class="s">Setup writes /etc/vss-course-host.json</text>
+<rect x="510" y="70" width="420" height="120" rx="10" class="box"/>
+<text x="530" y="102" class="h">Optional course lab container</text>
+<text x="530" y="133" class="b">BASE = http://nginx</text>
+<text x="530" y="163" class="s">Docker DNS; localhost means this container</text>
+<path d="M240 190V215H390V237" class="arrow"/>
+<path d="M720 190V215H570V237" class="arrow"/>
+<rect x="265" y="240" width="430" height="65" rx="10" fill="#d9edbc" stroke="#76b900" stroke-width="2"/>
+<text x="285" y="268" class="h">nginx: the shared course proxy</text>
+<text x="285" y="291" class="s">Use course_runtime.BASE in Python</text>
+<path d="M480 305V333" class="arrow"/>
+<rect x="80" y="335" width="800" height="55" rx="10" class="box"/>
+<text x="105" y="369" class="b">VSS agent · VIOS · RT-CV · RT-VLM · RT-Embed · Elasticsearch</text>
+<text x="30" y="422" class="s">Browser: published lab address. Docker: host daemon directly or via the mounted socket.</text>
+<text x="30" y="446" class="s">Inspect the course services; do not stop, reset or prune them.</text>
+</svg>
